@@ -259,20 +259,14 @@
     <label for="sbInput">Small Blind (Big Blind is always 2x)</label>
     <div class="stepper">
       <button type="button" id="sbMinus" title="Decrease">&minus;</button>
-      <input type="number" id="sbInput" value="100" min="1" step="any" aria-label="Small blind">
+      <input type="number" id="sbInput" value="20" min="1" step="any" aria-label="Small blind">
       <button type="button" id="sbPlus" title="Increase">+</button>
     </div>
   </div>
 
-  <div class="inline-row">
-    <div class="field-row">
-      <label for="stepInput">Step size (for +/&minus; buttons)</label>
-      <input type="number" id="stepInput" value="100" min="1" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
-    </div>
-    <div class="field-row">
-      <label for="durInput">Minutes per session</label>
-      <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
-    </div>
+  <div class="field-row">
+    <label for="durInput">Minutes per session</label>
+    <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
   </div>
   <p class="hint">Each new session defaults to 2x the previous small blind — adjust with +/&minus; if you want a different level.</p>
 
@@ -354,7 +348,6 @@
 
   // ---------- Setup page ----------
   var sbInput = document.getElementById("sbInput");
-  var stepInput = document.getElementById("stepInput");
   var durInput = document.getElementById("durInput");
   var listEl = document.getElementById("sessionList");
 
@@ -365,13 +358,10 @@
   function setSB(v) {
     sbInput.value = Math.max(1, Math.round(v));
   }
-  function stepSize() {
-    var v = parseInt(stepInput.value, 10);
-    return (isFinite(v) && v > 0) ? v : 1;
-  }
+  var SB_STEP = 10;
 
-  document.getElementById("sbMinus").addEventListener("click", function () { setSB(currentSB() - stepSize()); });
-  document.getElementById("sbPlus").addEventListener("click", function () { setSB(currentSB() + stepSize()); });
+  document.getElementById("sbMinus").addEventListener("click", function () { setSB(currentSB() - SB_STEP); });
+  document.getElementById("sbPlus").addEventListener("click", function () { setSB(currentSB() + SB_STEP); });
 
   document.getElementById("addSessionBtn").addEventListener("click", function () {
     var sb = currentSB();

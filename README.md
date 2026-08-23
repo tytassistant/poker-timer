@@ -4,7 +4,7 @@ A fully self-contained, offline poker tournament timekeeping app — one HTML fi
 
 ## Features
 
-- **Blind structure editor** — add a list of small blind levels; each new session defaults to 2× the previous SB, adjustable with configurable +/− steps
+- **Blind structure editor** — add a list of small blind levels; each new session defaults to 2× the previous SB, adjustable with +/− steps of 10 (or type any value)
 - **Big blind always 2× small blind**, displayed prominently in SB/BB form
 - **Session timer** — large countdown with progress bar, default 20 minutes (configurable)
 - **Voice announcements** (Web Speech API) at 5 and 1 minute remaining, plus a call at each session start
@@ -15,7 +15,7 @@ A fully self-contained, offline poker tournament timekeeping app — one HTML fi
 ## Usage
 
 1. Open `index.html`
-2. Enter your starting small blind (use +/− or type), set the step size and minutes per session
+2. Enter your starting small blind (use +/− or type), set the minutes per session
 3. Click **Add Session to List** for each level (or just hit **Start Tournament** to run from the current value)
 4. **Start Tournament** — the timer takes over; the app advances through (and past) your list automatically
 
