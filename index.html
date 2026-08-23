@@ -40,7 +40,7 @@
     box-shadow: 0 20px 60px rgba(0,0,0,.5);
   }
   h1 {
-    font-size: 22px;
+    font-size: 18px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--accent);
@@ -54,7 +54,7 @@
     margin-bottom: 28px;
   }
 
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; }
 
   .field-row { margin-bottom: 20px; }
   .stepper {
@@ -68,7 +68,7 @@
   }
   .stepper button {
     width: 56px;
-    font-size: 26px;
+    font-size: 14px;
     background: var(--felt);
     color: var(--text);
     border: none;
@@ -80,7 +80,7 @@
   .stepper input {
     flex: 1;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     height: 42px;
     font-weight: 600;
     background: transparent;
@@ -94,10 +94,10 @@
   .inline-row { display: flex; gap: 16px; align-items: end; }
   .inline-row .field-row { flex: 1; margin-bottom: 0; }
 
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .hint { font-size: 14px; color: var(--muted); margin-top: 6px; }
 
   button.primary, button.ghost {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     border-radius: 10px;
     cursor: pointer;
@@ -134,17 +134,18 @@
     gap: 10px;
     padding: 8px 14px;
     border-bottom: 1px solid #1e3a28;
+    font-size: 14px;
     font-variant-numeric: tabular-nums;
   }
   .session-list li:last-child { border-bottom: none; }
-  .session-list .num { color: var(--muted); font-size: 13px; width: 34px; }
+  .session-list .num { color: var(--muted); font-size: 14px; width: 34px; }
   .session-list .blinds { font-weight: 700; color: var(--accent); }
   .session-list .rm {
     margin-left: auto;
     background: none;
     border: none;
     color: var(--danger);
-    font-size: 18px;
+    font-size: 14px;
     cursor: pointer;
     line-height: 1;
     opacity: .7;
@@ -344,7 +345,7 @@
     width: 100%;
     height: 44px;
     padding: 0 10px;
-    font-size: 16px;
+    font-size: 14px;
     background: #0f2015;
     border: 1px solid #2a4a35;
     border-radius: 10px;
@@ -354,37 +355,37 @@
   .modal .actions3 { display: flex; gap: 10px; margin-top: 6px; }
   .modal .actions3 button { flex: 1; font-size: 14px; padding: 12px 6px; }
   .modal .warn-line {
-    font-size: 13px;
+    font-size: 14px;
     color: #e67e22;
     text-align: center;
     margin-top: 14px;
   }
-  .chips-input { width:100%; border-collapse:collapse; }
-  .chips-input th {
-    text-align:left; font-size:13px; color:var(--muted);
-    text-transform:uppercase; letter-spacing:1.5px; padding:0 0 6px;
+  .chips-legend {
+    font-size:14px; color:var(--muted); margin-bottom:8px;
   }
-  .chips-input td { padding:4px 0; }
-  .chips-input td.c-val { color:var(--text); font-weight:600; white-space:nowrap; }
+  .chips-input { display:grid; grid-template-columns:repeat(2,1fr); gap:12px 16px; }
+  .chips-input .chip-cell { display:flex; flex-direction:column; gap:4px; }
+  .chips-input .c-val { color:var(--text); font-weight:600; font-size:14px; }
   .chips-input input {
-    width:100%; height:40px; font-size:16px; text-align:right;
+    width:100%; height:40px; font-size:14px; text-align:center;
     background:#0f2015; border:1px solid #2a4a35; border-radius:8px;
     color:var(--text); outline:none;
   }
+  @media (max-width:480px) { .chips-input { grid-template-columns:1fr; } }
   #chipsResult { margin-top:18px; }
   #chipsResult .res-head {
     font-size:14px; color:#bfe6c8; font-weight:600; margin-bottom:8px; text-align:center;
   }
   #chipsResult table { width:100%; border-collapse:collapse; }
   #chipsResult th {
-    font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px;
+    font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px;
     padding:6px 4px; text-align:center; border-bottom:1px solid #2a4a35;
   }
   #chipsResult th.l { text-align:left; }
-  #chipsResult td { padding:7px 4px; text-align:center; font-size:15px; }
+  #chipsResult td { padding:7px 4px; text-align:center; font-size:14px; }
   #chipsResult td.l { text-align:left; color:var(--muted); }
   #chipsResult tr.total td {
-    font-weight:700; border-top:1px solid #2a4a35; color:#ffd68a; font-size:15px;
+    font-weight:700; border-top:1px solid #2a4a35; color:#ffd68a; font-size:14px;
   }
 </style>
 </head>
@@ -407,11 +408,11 @@
   <div class="inline-row">
     <div class="field-row">
       <label for="buyinInput">Buy-in Amount</label>
-      <input type="number" id="buyinInput" value="500" min="0" step="any" style="width:100%;height:44px;padding:0;font-size:16px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
+      <input type="number" id="buyinInput" value="500" min="0" step="any" style="width:100%;height:44px;padding:0;font-size:14px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
     </div>
     <div class="field-row">
       <label for="durInput">Minutes per session</label>
-      <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;height:44px;padding:0;font-size:16px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
+      <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;height:44px;padding:0;font-size:14px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
     </div>
   </div>
   <p class="hint">Each new session defaults to 2x the previous small blind — adjust with +/&minus; if you want a different level.</p>
@@ -427,7 +428,7 @@
     <label for="playerInput">Players (enter a name, then add)</label>
     <div class="stepper">
       <input type="text" id="playerInput" placeholder="Player name" aria-label="Player name">
-      <button type="button" id="playerAdd" title="Add player" style="width:auto;padding:0 18px;font-size:16px;">ADD</button>
+      <button type="button" id="playerAdd" title="Add player" style="width:auto;padding:0 18px;font-size:14px;">ADD</button>
     </div>
   </div>
 
@@ -537,10 +538,8 @@
       </div>
     </div>
 
-    <table class="chips-input" id="chipsInputTable">
-      <thead><tr><th>Chip value</th><th style="text-align:right;">You have</th></tr></thead>
-      <tbody id="chipsInputBody"></tbody>
-    </table>
+    <div class="chips-legend">How many chips do you have of each value?</div>
+    <div class="chips-input" id="chipsInputBody"></div>
 
     <div id="chipsResult"></div>
 
@@ -1156,17 +1155,17 @@
     chipsInputBody.innerHTML = "";
     for (var i = 0; i < CHIP_DENS.length; i++) {
       var d = CHIP_DENS[i];
-      var tr = document.createElement("tr");
-      var tdL = document.createElement("td");
-      tdL.className = "c-val";
-      tdL.textContent = "$" + d;
-      var tdR = document.createElement("td");
+      var cell = document.createElement("div");
+      cell.className = "chip-cell";
+      var lab = document.createElement("span");
+      lab.className = "c-val";
+      lab.textContent = "$" + d;
       var inp = document.createElement("input");
       inp.type = "number"; inp.min = "0"; inp.id = "ci-" + d; inp.value = "0";
       inp.placeholder = "0";
-      tdR.appendChild(inp);
-      tr.appendChild(tdL); tr.appendChild(tdR);
-      chipsInputBody.appendChild(tr);
+      cell.appendChild(lab);
+      cell.appendChild(inp);
+      chipsInputBody.appendChild(cell);
     }
   }
   function populateChipsPlayers() {
