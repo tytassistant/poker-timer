@@ -80,8 +80,8 @@
   .stepper input {
     flex: 1;
     text-align: center;
-    font-size: 26px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 600;
     background: transparent;
     border: none;
     color: var(--accent);
@@ -264,9 +264,15 @@
     </div>
   </div>
 
-  <div class="field-row">
-    <label for="durInput">Minutes per session</label>
-    <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
+  <div class="inline-row">
+    <div class="field-row">
+      <label for="buyinInput">Buy-in Amount</label>
+      <input type="number" id="buyinInput" value="500" min="0" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
+    </div>
+    <div class="field-row">
+      <label for="durInput">Minutes per session</label>
+      <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;padding:10px;font-size:18px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
+    </div>
   </div>
   <p class="hint">Each new session defaults to 2x the previous small blind — adjust with +/&minus; if you want a different level.</p>
 
