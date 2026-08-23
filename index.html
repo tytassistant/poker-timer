@@ -221,8 +221,8 @@
     transition: width .5s linear;
   }
 
-  .controls { display: flex; gap: 12px; }
-  .controls button { flex: 1; }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; }
+  .controls button { flex: 1 1 40%; min-width: 140px; }
 
   /* ---- Interlude overlay ---- */
   .overlay {
@@ -247,6 +247,118 @@
   .overlay .next .bb { color: var(--accent); }
   .overlay .next .sep { color: var(--muted); margin: 0 10px; font-weight: 300; }
   .overlay .count { color: var(--muted); font-size: 16px; }
+
+  /* ---- Run two-column + table ---- */
+  .run-flex {
+    display: flex;
+    gap: 36px;
+    align-items: flex-start;
+  }
+  .run-main { flex: 1 1 55%; min-width: 0; }
+  .run-side { flex: 1 1 45%; min-width: 0; }
+  .run-side h2 {
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  table.players {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    background: #0f2015;
+    border: 1px solid #2a4a35;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table.players th, table.players td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid #1e3a28;
+    vertical-align: top;
+  }
+  table.players th {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: #0b1a10;
+  }
+  table.players tr:last-child td { border-bottom: none; }
+  table.players td.num-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.players td.buyin { color: var(--accent); font-weight: 700; white-space: nowrap; }
+  table.players tr.ko td.player-name { text-decoration: line-through; color: var(--muted); }
+  table.players .ev { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; white-space: nowrap; }
+  table.players .ev .rebuy { color: var(--accent); font-weight: 700; }
+  table.players .ev + .ev { margin-top: 2px; }
+  .no-players { color: var(--muted); font-style: italic; text-align: center; padding: 14px; }
+
+  .pause-badge {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #1a1a0a;
+    background: #e67e22;
+    border-radius: 999px;
+    padding: 3px 12px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 900px) {
+    .run-flex { flex-direction: column; gap: 24px; }
+    .run-main, .run-side { flex: 1 1 auto; width: 100%; }
+  }
+
+  /* ---- Elim modal ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,12,8,.88);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid #2a4a35;
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  .modal h3 {
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .modal .field-row select {
+    width: 100%;
+    height: 44px;
+    padding: 0 10px;
+    font-size: 16px;
+    background: #0f2015;
+    border: 1px solid #2a4a35;
+    border-radius: 10px;
+    color: var(--text);
+    outline: none;
+  }
+  .modal .actions3 { display: flex; gap: 10px; margin-top: 6px; }
+  .modal .actions3 button { flex: 1; font-size: 14px; padding: 12px 6px; }
+  .modal .warn-line {
+    font-size: 13px;
+    color: #e67e22;
+    text-align: center;
+    margin-top: 14px;
+  }
 </style>
 </head>
 <body>
@@ -309,18 +421,35 @@
 
 <!-- ============ RUN PAGE ============ -->
 <div class="card hidden" id="runView">
-  <div class="run-info">
-    <span class="session-tag" id="sessionTag">Session 1</span>
-  </div>
-  <div class="blinds-display">
-    <span class="sb" id="runSB">100</span><span class="sep">/</span><span class="bb" id="runBB">200</span>
-  </div>
-  <div class="blinds-label">Small Blind / Big Blind</div>
-  <div class="timer" id="timerDisplay">20:00</div>
-  <div class="status-bar"><div class="fill" id="progressFill"></div></div>
-  <div class="controls">
-    <button class="ghost" id="skipBtn">Skip to Next</button>
-    <button class="ghost" id="stopBtn">Stop &amp; Setup</button>
+  <div class="run-flex">
+    <div class="run-main">
+      <div class="run-info">
+        <span class="session-tag" id="sessionTag">Session 1</span>
+        <span class="pause-badge hidden" id="pauseBadge">PAUSED</span>
+      </div>
+      <div class="blinds-display">
+        <span class="sb" id="runSB">100</span><span class="sep">/</span><span class="bb" id="runBB">200</span>
+      </div>
+      <div class="blinds-label">Small Blind / Big Blind</div>
+      <div class="timer" id="timerDisplay">20:00</div>
+      <div class="status-bar"><div class="fill" id="progressFill"></div></div>
+      <div class="controls">
+        <button class="ghost" id="pauseBtn" style="flex:1;">Pause</button>
+        <button class="ghost" id="elimBtn" style="flex:1;">Eliminate Player</button>
+        <button class="ghost" id="skipBtn" style="flex:1;">Skip to Next</button>
+        <button class="ghost" id="stopBtn" style="flex:1;">Stop &amp; Setup</button>
+      </div>
+    </div>
+
+    <div class="run-side">
+      <h2>Players &amp; Buy-ins</h2>
+      <table class="players" id="playerTable">
+        <thead>
+          <tr><th>Player</th><th style="text-align:right;">Buy-in</th><th>Eliminations</th></tr>
+        </thead>
+        <tbody id="playerTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -333,6 +462,29 @@
       <span class="sb" id="ovSB"></span><span class="sep">/</span><span class="bb" id="ovBB"></span>
     </div>
     <div class="count" id="ovCount"></div>
+  </div>
+</div>
+
+<!-- ============ ELIMINATE MODAL ============ -->
+<div class="modal-overlay hidden" id="elimModal">
+  <div class="modal">
+    <h3>Record Elimination</h3>
+    <div class="field-row">
+      <label for="elimTarget">Player eliminated</label>
+      <select id="elimTarget"></select>
+    </div>
+    <div class="field-row">
+      <label for="elimBy">Eliminated by</label>
+      <select id="elimBy"></select>
+    </div>
+    <div class="actions3">
+      <button class="ghost" id="elimCancel">Cancel</button>
+      <button class="ghost" id="elimSave">Save</button>
+    </div>
+    <div class="actions3" style="margin-top:10px;">
+      <button class="primary" id="elimSaveBuyin" style="width:100%;">Save with Buy-in</button>
+    </div>
+    <div class="warn-line" id="elimWarn"></div>
   </div>
 </div>
 
@@ -350,12 +502,21 @@
     warned5: false,
     warned1: false,
     tickId: null,
-    running: false
+    running: false,
+    buyInBase: 0,
+    tournamentStartMs: 0,   // wall-clock start of tournament (for elapsed clock)
+    pausedTotalMs: 0,       // cumulative ms spent paused
+    paused: false,
+    pausedAtMs: 0,
+    pausedRemainingMs: 0,
+    active: {},             // playerIndex -> true (still in game)
+    eliminated: {}          // playerIndex -> [{session, elapsedSec, by, rebuy}]
   };
 
   // ---------- Setup page ----------
   var sbInput = document.getElementById("sbInput");
   var durInput = document.getElementById("durInput");
+  var buyinInput = document.getElementById("buyinInput");
   var listEl = document.getElementById("sessionList");
 
   function currentSB() {
@@ -385,7 +546,17 @@
       state.sessions = [sb];
     }
     state.durationSec = clampDuration(parseInt(durInput.value, 10));
+    var buyin = parseInt(buyinInput.value, 10);
+    state.buyInBase = (isFinite(buyin) && buyin >= 0) ? buyin : 0;
     state.index = 0;
+    state.tournamentStartMs = Date.now();
+    state.pausedTotalMs = 0;
+    state.paused = false;
+    state.pausedAtMs = 0;
+    state.pausedRemainingMs = 0;
+    state.active = {};
+    state.players.forEach(function (name, i) { state.active[i] = true; });
+    state.eliminated = {};
     startSession(true);
   });
 
@@ -560,6 +731,15 @@
   var setupView = document.getElementById("setupView");
   var runView = document.getElementById("runView");
   var overlay = document.getElementById("overlay");
+  var tableBody = document.getElementById("playerTableBody");
+  var pauseBadge = document.getElementById("pauseBadge");
+  var pauseBtn = document.getElementById("pauseBtn");
+  var elimModal = document.getElementById("elimModal");
+  var elimTarget = document.getElementById("elimTarget");
+  var elimBy = document.getElementById("elimBy");
+  var elimWarn = document.getElementById("elimWarn");
+  var elimWasCounting = false;
+  var elimOpen = false;
 
   function fmt(sec) {
     sec = Math.max(0, sec);
@@ -584,6 +764,7 @@
     sessionTag.textContent = "Session " + (state.index + 1);
     runSB.textContent = formatNum(sb);
     runBB.textContent = formatNum(sb * 2);
+    renderPlayerTable();
 
     if (announce) {
       speak("Session " + (state.index + 1) + ". Small blind " + speakNum(sb) + ", big blind " + speakNum(sb * 2) + ". " + Math.round(state.durationSec / 60) + " minutes on the clock.");
@@ -600,8 +781,185 @@
     return n.toLocaleString("en-US");
   }
 
-  function tick() {
+  function fmtElapsed(totalSec) {
+    totalSec = Math.max(0, Math.floor(totalSec));
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor((totalSec % 3600) / 60);
+    var s = totalSec % 60;
+    return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function activeElapsedMs() {
+    var now = Date.now();
+    var ms = now - state.tournamentStartMs - state.pausedTotalMs;
+    if (state.paused) ms -= (now - state.pausedAtMs);
+    return Math.max(0, ms);
+  }
+
+  // ---------- Pause / resume ----------
+  function setPauseBtn(v) {
+    pauseBtn.textContent = v ? "Resume" : "Pause";
+    pauseBadge.classList.toggle("hidden", !v);
+  }
+  function pauseTimer(remember) {
+    if (!state.running || state.paused) return;
+    state.paused = true;
+    state.pausedAtMs = Date.now();
+    state.pausedRemainingMs = Math.max(0, state.endAt - Date.now());
+    clearInterval(state.tickId);
+    if (remember) elimWasCounting = true;
+    setPauseBtn(true);
+  }
+  function resumeTimer() {
+    if (!state.paused) return;
+    var held = Date.now() - state.pausedAtMs;
+    state.pausedTotalMs += held;
+    state.paused = false;
+    state.pausedAtMs = 0;
+    state.endAt = Date.now() + state.pausedRemainingMs;
+    setPauseBtn(false);
+    if (state.running) { tick(); clearInterval(state.tickId); state.tickId = setInterval(tick, 250); }
+  }
+  function pauseToggle() {
     if (!state.running) return;
+    if (state.paused) resumeTimer(); else pauseTimer(false);
+  }
+
+  // ---------- Player table ----------
+  function eventsOf(i) { return state.eliminated[i] || []; }
+  function rebuyCount(i) { var n = 0; eventsOf(i).forEach(function (e) { if (e.rebuy) n++; }); return n; }
+  function buyinTotal(i) { return state.buyInBase + rebuyCount(i) * state.buyInBase; }
+  function isKO(i) {
+    var evs = eventsOf(i);
+    return evs.some(function (e) { return !e.rebuy; });
+  }
+
+  function renderPlayerTable() {
+    tableBody.innerHTML = "";
+    if (!state.players.length) {
+      var tr0 = document.createElement("tr");
+      var td0 = document.createElement("td");
+      td0.colSpan = 3;
+      td0.className = "no-players";
+      td0.textContent = "No players added.";
+      tr0.appendChild(td0);
+      tableBody.appendChild(tr0);
+      return;
+    }
+    state.players.forEach(function (name, i) {
+      var tr = document.createElement("tr");
+      if (isKO(i)) tr.className = "ko";
+
+      var tdName = document.createElement("td");
+      tdName.className = "player-name";
+      tdName.textContent = name + (isKO(i) ? "  (OUT)" : "");
+      tr.appendChild(tdName);
+
+      var tdBuy = document.createElement("td");
+      tdBuy.className = "buyin num-col";
+      tdBuy.textContent = formatNum(buyinTotal(i));
+      tr.appendChild(tdBuy);
+
+      var tdEv = document.createElement("td");
+      var evs = eventsOf(i);
+      if (evs.length) {
+        evs.forEach(function (e) {
+          var span = document.createElement("span");
+          span.className = "ev";
+          var byName = e.by !== null && e.by !== undefined ? state.players[e.by] : "?";
+          var parts = "S" + e.session + " • " + fmtElapsed(e.elapsedSec) + " • by " + byName;
+          span.appendChild(document.createTextNode(parts));
+          if (e.rebuy) {
+            var b = document.createElement("b");
+            b.className = "rebuy";
+            b.textContent = "  +REBUY";
+            span.appendChild(b);
+          }
+          tdEv.appendChild(span);
+        });
+      } else {
+        tdEv.textContent = "—";
+        tdEv.style.color = "var(--muted)";
+      }
+      tr.appendChild(tdEv);
+      tableBody.appendChild(tr);
+    });
+  }
+
+  // ---------- Eliminate modal ----------
+  function activeIndices() {
+    var out = [];
+    state.players.forEach(function (n, i) { if (state.active[i] !== false && !isKO(i)) out.push(i); });
+    return out;
+  }
+  function openElimModal() {
+    if (!state.running) return;
+    if (!overlay.classList.contains("hidden")) return; // interlude in progress
+    var active = activeIndices();
+    if (active.length < 2) {
+      speak("Not enough players to eliminate — at least two must remain.");
+      return;
+    }
+    elimTarget.innerHTML = "";
+    active.forEach(function (i) {
+      var o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = state.players[i];
+      elimTarget.appendChild(o);
+    });
+    function rebuildBy() {
+      var target = parseInt(elimTarget.value, 10);
+      var prev = elimBy.value ? parseInt(elimBy.value, 10) : null;
+      elimBy.innerHTML = "";
+      active.forEach(function (i) {
+        if (i === target) return;
+        var o = document.createElement("option");
+        o.value = String(i);
+        o.textContent = state.players[i];
+        elimBy.appendChild(o);
+      });
+      if (prev !== null && elimBy.querySelector('option[value="' + prev + '"]')) elimBy.value = String(prev);
+    }
+    rebuildBy();
+    elimTarget.addEventListener("change", rebuildBy);
+    elimWarn.textContent = "";
+    elimOpen = true;
+    elimWasCounting = state.running && !state.paused;
+    if (elimWasCounting) pauseTimer(false);
+    elimModal.classList.remove("hidden");
+  }
+  function closeElimModal() {
+    elimOpen = false;
+    elimModal.classList.add("hidden");
+    if (elimWasCounting) resumeTimer();
+  }
+  function saveElim(rebuy) {
+    if (!elimOpen) return;
+    var target = parseInt(elimTarget.value, 10);
+    var by = parseInt(elimBy.value, 10);
+    if (!isFinite(target)) {
+      elimWarn.textContent = "Choose the player who was eliminated.";
+      return;
+    }
+    if (!isFinite(by)) {
+      elimWarn.textContent = "Choose who eliminated them.";
+      return;
+    }
+    var ev = {
+      session: state.index + 1,
+      elapsedSec: Math.round(activeElapsedMs() / 1000),
+      by: by,
+      rebuy: !!rebuy
+    };
+    state.eliminated[target] = state.eliminated[target] || [];
+    state.eliminated[target].push(ev);
+    if (!rebuy) state.active[target] = false;
+    renderPlayerTable();
+    closeElimModal();
+  }
+
+  function tick() {
+    if (!state.running || state.paused) return;
     var remainMs = state.endAt - Date.now();
     var rem = Math.ceil(remainMs / 1000);
 
@@ -668,7 +1026,10 @@
 
   // ---------- Controls ----------
   function stopToSetup() {
+    if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
     state.running = false;
+    state.paused = false;
+    setPauseBtn(false);
     clearInterval(state.tickId);
     try { window.speechSynthesis.cancel(); } catch (e) {}
     overlay.classList.add("hidden");
@@ -679,14 +1040,24 @@
   document.getElementById("stopBtn").addEventListener("click", stopToSetup);
   document.getElementById("skipBtn").addEventListener("click", function () {
     if (!state.running) return;
+    if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
+    state.paused = false;
+    state.pausedAtMs = 0;
+    setPauseBtn(false);
     clearInterval(state.tickId);
     try { window.speechSynthesis.cancel(); } catch (e) {}
     state.index++;
     startSession(true);
   });
+  pauseBtn.addEventListener("click", pauseToggle);
+  document.getElementById("elimBtn").addEventListener("click", openElimModal);
+  document.getElementById("elimCancel").addEventListener("click", closeElimModal);
+  document.getElementById("elimSave").addEventListener("click", function () { saveElim(false); });
+  document.getElementById("elimSaveBuyin").addEventListener("click", function () { saveElim(true); });
 
   renderList();
   renderPlayers();
+  renderPlayerTable();
 })();
 </script>
 </body>
