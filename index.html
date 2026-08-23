@@ -400,10 +400,12 @@
     <label for="sbInput">Small Blind (Big Blind is always 2x)</label>
     <div class="stepper">
       <button type="button" id="sbMinus" title="Decrease">&minus;</button>
-      <input type="number" id="sbInput" value="20" min="1" step="any" aria-label="Small blind">
+      <input type="number" id="sbInput" value="20" min="1" step="any" aria-label="Small Blind">
       <button type="button" id="sbPlus" title="Increase">+</button>
     </div>
   </div>
+
+  <p class="hint" style="margin:20px 0;font-style:italic;"><span style="font-weight:600;">Note:</span> Each new session defaults to 2x the previous small blind — adjust with +/&minus; if you want a different level.</p>
 
   <div class="inline-row">
     <div class="field-row">
@@ -415,8 +417,6 @@
       <input type="number" id="durInput" value="20" min="1" max="600" step="any" style="width:100%;height:44px;padding:0;font-size:14px;background:#0f2015;border:1px solid #2a4a35;border-radius:10px;color:var(--text);outline:none;text-align:center;">
     </div>
   </div>
-  <p class="hint" style="margin:20px 0;">Each new session defaults to 2x the previous small blind — adjust with +/&minus; if you want a different level.</p>
-
   <div class="field-row">
     <button class="primary" id="addSessionBtn" style="background:#256441;color:var(--text);margin-bottom:12px;">+ Add Session to List</button>
     <ul class="session-list" id="sessionList"></ul>
@@ -433,7 +433,7 @@
   </div>
 
   <ul class="session-list" id="playerList"></ul>
-  <p class="hint" style="margin:20px 0;">Check one player to set the starting dealer.</p>
+  <p class="hint" style="margin:20px 0;font-style:italic;"><span style="font-weight:600;">Note:</span> Check one player to set the starting dealer.</p>
 
   <div class="inline-row" style="margin-bottom:20px;">
     <div class="field-row">
