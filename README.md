@@ -7,6 +7,7 @@ A fully self-contained, offline poker tournament timekeeping app — one HTML fi
 - **Blind structure editor** — add a list of small blind levels; each new session defaults to 2× the previous SB, adjustable with +/− steps of 10 (or type any value)
 - **Buy-in amount** — set the starting buy-in per player (default 500)
 - **Player rosters** — add named players (numbered), mark the starting dealer (always one), then **Randomize Order** or **Randomize Dealer**
+- **Suggest Chips** — enter how many chips you have of each denomination ($1–$500), pick your stack depth (Standard 100×BB / Long 200×BB / Turbo 50×BB), and it deals equal starting stacks to every player from the larger chips down, showing how many chips to use and how many remain as rebuy/color-up reserve
 - **Big blind always 2× small blind**, displayed prominently in SB/BB form
 - **Session timer** — large countdown with progress bar, default 20 minutes (configurable)
 - **Pause / Resume** — freeze and unfreeze the clock mid-session
@@ -33,8 +34,9 @@ The session page tracks the field and each player's running buy-in:
 2. Enter your starting small blind (use +/− or type), the **buy-in amount**, and the minutes per session
 3. Click **Add Session to List** for each level (or just hit **Start Tournament** to run from the current value)
 4. **Add your players**, tick the **starting dealer**, and use **Randomize Order** / **Randomize Dealer** if the seating should be random
-5. **Start Tournament** — the timer takes over; the app advances through (and past) your list automatically
-6. During play: **Pause/Resume** the clock, **Eliminate Player** to log a knock-out or a **rebuy**, **Skip to Next** to jump levels, or **Stop & Setup** to return to configuration
+5. (Optional) Click **Suggest Chips**, enter the chips you have of each value and pick Standard / Long / Turbo, then hit **Suggest** to get a fair per-player stack
+6. **Start Tournament** — the timer takes over; the app advances through (and past) your list automatically
+7. During play: **Pause/Resume** the clock, **Eliminate Player** to log a knock-out or a **rebuy**, **Skip to Next** to jump levels, or **Stop & Setup** to return to configuration
 
 Voice output uses your OS's built-in speech synthesis; sound cues work even without a TTS voice installed.
 
