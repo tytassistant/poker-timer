@@ -600,6 +600,7 @@
     state.sessions.push(sb);
     renderList();
     setSB(sb * 2); // next session defaults to double
+    updateChipsAvailable();
   });
 
   document.getElementById("startBtn").addEventListener("click", function () {
@@ -652,6 +653,7 @@
         if (state.running) return;
         state.sessions.splice(i, 1);
         renderList();
+        updateChipsAvailable();
       });
       li.appendChild(num); li.appendChild(blinds); li.appendChild(rm);
       listEl.appendChild(li);
@@ -670,6 +672,7 @@
     playerInput.value = "";
     playerInput.focus();
     renderPlayers();
+    updateChipsAvailable();
   });
   playerInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") document.getElementById("playerAdd").click();
@@ -735,6 +738,7 @@
         if (state.dealer === i) state.dealer = null;
         else if (state.dealer > i) state.dealer--;
         renderPlayers();
+        updateChipsAvailable();
       });
       li.appendChild(rm);
       playerListEl.appendChild(li);
@@ -1096,6 +1100,16 @@
   }
 
   // ---------- Chips suggest ----------
+  function chipsGateEl() { return document.getElementById("chipsBtn"); }
+  function updateChipsAvailable() {
+    var b = chipsGateEl();
+    if (!b) return;
+    var ok = state.players.length >= 2 && state.sessions.length >= 1;
+    b.disabled = !ok;
+    b.title = ok ? "" : "Add at least 2 players and 1 session first";
+    b.style.opacity = ok ? "" : "0.4";
+    b.style.cursor = ok ? "pointer" : "not-allowed";
+  }
   function readChipsInputs() {
     var counts = {};
     for (var i = 0; i < CHIP_DENS.length; i++) {
@@ -1104,31 +1118,23 @@
     }
     return counts;
   }
-  function distribute(target, perPlayerAvail) {
-    // ~70% of stack value in the large chips ($100/$500), ~30% reserved in
-    // small chips ($1-$50) so blinds and bets are makeable. We fill greedily
-    // from largest down, capping at how many each player can have, and only
-    // succeed if the remainder reaches exactly zero.
-    var alloc = {};
-    var hiBudget = Math.round(target * 0.70);
-    var rem = hiBudget;
-    [500, 100].forEach(function (d) {
-      var take = Math.max(0, Math.min(Math.floor(rem / d), perPlayerAvail[d] || 0));
-      alloc[d] = take;
-      rem -= take * d;   // if high chips run short, this leftover rolls into low
-    });
-    var lowTarget = (target - hiBudget) + rem;
-    var lowOk = true;
-    [50, 20, 10, 5, 2, 1].forEach(function (d) {
-      if (!lowOk) { alloc[d] = 0; return; }
-      var need = Math.floor(lowTarget / d);
-      var have = perPlayerAvail[d] || 0;
-      if (need > have) { lowOk = false; return; }
-      alloc[d] = need;
-      lowTarget -= need * d;
-    });
-    if (!lowOk || lowTarget !== 0) return null;
-    return alloc;
+  // Build a per-player stack of exactly `target` using as FEW chips as
+  // possible, using as many of the large chips as we have of them.
+  // (Our set $1/$2/$5/$10/$20/$50/$100/$500 is a canonical chain where each
+  // value is >= 2x the next-smaller, so filling from largest to smallest is
+  // always optimal and, if a stack is possible at all, this finds one.)
+  function allocate(target, pA) {
+    var used = {};
+    for (var k = 0; k < CHIP_DENS.length; k++) used[CHIP_DENS[k]] = 0;
+    var rem = target;
+    for (var i = CHIP_DENS.length - 1; i >= 0; i--) {
+      var d = CHIP_DENS[i];
+      var take = Math.min(Math.floor(rem / d), pA[d] || 0);
+      used[d] = take;
+      rem -= take * d;
+    }
+    if (rem > 0) return null;   // leftover that the smaller chips can't cover
+    return used;
   }
   function suggestion() {
     var sb = parseInt(sbInput.value, 10);
@@ -1136,20 +1142,22 @@
     var bb = sb * 2;
     var depth = parseInt(chipsDepth.value, 10) || 100;
     var target = bb * depth;
-    var n = Math.max(1, parseInt(chipsPlayers.value, 10) || state.players.length || 2);
+    var n = Math.max(1, parseInt(chipsPlayers.value, 10) || state.players.length || 1);
     var avail = readChipsInputs();
-    var perAvail = {};
-    for (var i = 0; i < CHIP_DENS.length; i++) perAvail[CHIP_DENS[i]] = Math.floor(avail[CHIP_DENS[i]] / n);
-    var alloc = distribute(target, perAvail);
-    if (!alloc) return { error: "Not enough chips to deal a full " + formatNum(target) + " to every player with the counts you entered. Add more of the low / mid denominations, or lower the stack depth.", target: target, n: n, partial: true };
+    var pA = {};
+    for (var i = 0; i < CHIP_DENS.length; i++) pA[CHIP_DENS[i]] = Math.floor(avail[CHIP_DENS[i]] / n);
+    var used = allocate(target, pA);
+    if (!used) {
+      return { error: "Not enough chips to give every player " + formatNum(target) + ". Add more chips or lower the stack depth.", target: target, n: n, partial: true };
+    }
     var rows = [];
     for (var j = 0; j < CHIP_DENS.length; j++) {
       var d = CHIP_DENS[j];
-      if (alloc[d]) rows.push({ d: d, perPlayer: alloc[d], value: alloc[d] * d, totalUsed: alloc[d] * n, reserve: avail[d] - alloc[d] * n });
+      if (used[d] > 0) rows.push({ d: d, perPlayer: used[d], value: used[d] * d, totalUsed: used[d] * n, reserve: avail[d] - used[d] * n });
     }
-    var stackChips = rows.reduce(function (s, r) { return s + r.perPlayer; }, 0);
-    var stackValue = rows.reduce(function (s, r) { return s + r.value; }, 0);
-    return { target: target, n: n, sb: sb, bb: bb, depth: depth, rows: rows, stackChips: stackChips, stackValue: stackValue };
+    var totalChips = rows.reduce(function (s, r) { return s + r.perPlayer; }, 0);
+    var totalValue = rows.reduce(function (s, r) { return s + r.value; }, 0);
+    return { target: target, n: n, sb: sb, bb: bb, depth: depth, rows: rows, stackChips: totalChips, stackValue: totalValue };
   }
   function renderChipsInputs() {
     chipsInputBody.innerHTML = "";
@@ -1170,16 +1178,18 @@
   }
   function populateChipsPlayers() {
     chipsPlayers.innerHTML = "";
-    var n = state.players.length || 6;
+    var n = state.players.length;
     var opts = [];
-    if (opts.indexOf(n) === -1) opts.push(n);
-    [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].forEach(function (x) { if (opts.indexOf(x) === -1) opts.push(x); });
-    opts.sort(function (a, b) { return a - b; });
+    [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].forEach(function (x) {
+      if (opts.indexOf(x) === -1) opts.push(x);
+    });
+    if (n > 0 && n > 16) { opts.push(n); opts.sort(function (a, b) { return a - b; }); }
+    var sel = n >= 2 ? n : (n === 1 ? 1 : 2);
     opts.forEach(function (v) {
       var o = document.createElement("option");
       o.value = String(v);
       o.textContent = v + (v === n ? "  (your players)" : "");
-      if (v === n) o.selected = true;
+      if (v === sel) o.selected = true;
       chipsPlayers.appendChild(o);
     });
   }
@@ -1234,7 +1244,10 @@
   function closeChipsModal() {
     chipsModal.classList.add("hidden");
   }
-  if (document.getElementById("chipsBtn")) document.getElementById("chipsBtn").addEventListener("click", openChipsModal);
+  if (document.getElementById("chipsBtn")) document.getElementById("chipsBtn").addEventListener("click", function () {
+    if (state.players.length < 2 || state.sessions.length < 1) return;
+    openChipsModal();
+  });
   if (document.getElementById("chipsCancel")) document.getElementById("chipsCancel").addEventListener("click", closeChipsModal);
   if (document.getElementById("chipsSuggest")) document.getElementById("chipsSuggest").addEventListener("click", onChipsSuggest);
   if (chipsPlayers) chipsPlayers.addEventListener("change", onChipsSuggest);
@@ -1274,6 +1287,7 @@
   renderList();
   renderPlayers();
   renderPlayerTable();
+  updateChipsAvailable();
 })();
 </script>
 </body>
