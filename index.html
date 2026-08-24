@@ -820,7 +820,6 @@
   var elimTarget = document.getElementById("elimTarget");
   var elimBy = document.getElementById("elimBy");
   var elimWarn = document.getElementById("elimWarn");
-  var elimWasCounting = false;
   var elimOpen = false;
 
   var chipsModal = document.getElementById("chipsModal");
@@ -892,13 +891,12 @@
     pauseBtn.textContent = v ? "Resume" : "Pause";
     pauseBadge.classList.toggle("hidden", !v);
   }
-  function pauseTimer(remember) {
+  function pauseTimer() {
     if (!state.running || state.paused) return;
     state.paused = true;
     state.pausedAtMs = Date.now();
     state.pausedRemainingMs = Math.max(0, state.endAt - Date.now());
     clearInterval(state.tickId);
-    if (remember) elimWasCounting = true;
     setPauseBtn(true);
   }
   function resumeTimer() {
@@ -913,7 +911,7 @@
   }
   function pauseToggle() {
     if (!state.running) return;
-    if (state.paused) resumeTimer(); else pauseTimer(false);
+    if (state.paused) resumeTimer(); else pauseTimer();
   }
 
   // ---------- Player table ----------
@@ -1045,14 +1043,11 @@
     elimTarget.addEventListener("change", rebuildBy);
     elimWarn.textContent = "";
     elimOpen = true;
-    elimWasCounting = state.running && !state.paused;
-    if (elimWasCounting) pauseTimer(false);
     elimModal.classList.remove("hidden");
   }
   function closeElimModal() {
     elimOpen = false;
     elimModal.classList.add("hidden");
-    if (elimWasCounting) resumeTimer();
   }
   function saveElim(rebuy) {
     if (!elimOpen) return;
@@ -1377,7 +1372,7 @@
   function confirmAction(message, action) {
     if (!state.running) { action(); return; }
     var wasPaused = state.paused;
-    if (!wasPaused) pauseTimer(false);
+    if (!wasPaused) pauseTimer();
     if (window.confirm(message)) {
       action();
     } else if (!wasPaused) {
@@ -1385,7 +1380,7 @@
     }
   }
   function stopToSetup() {
-    if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
+    if (elimOpen) { elimOpen = false; elimModal.classList.add("hidden"); }
     state.running = false;
     state.paused = false;
     setPauseBtn(false);
@@ -1402,7 +1397,7 @@
   document.getElementById("skipBtn").addEventListener("click", function () {
     if (!state.running) return;
     confirmAction("Skip to the next blind level?", function () {
-      if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
+      if (elimOpen) { elimOpen = false; elimModal.classList.add("hidden"); }
       state.paused = false;
       state.pausedAtMs = 0;
       setPauseBtn(false);
