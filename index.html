@@ -302,13 +302,13 @@
   .pause-badge {
     display: inline-block;
     margin-left: 10px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     color: #1a1a0a;
     background: #e67e22;
     border-radius: 999px;
-    padding: 3px 12px;
+    padding: 5px 16px;
     vertical-align: middle;
   }
 
@@ -850,6 +850,7 @@
     setupView.classList.add("hidden");
     overlay.classList.add("hidden");
     runView.classList.remove("hidden");
+    window.scrollTo(0, 0);
 
     sessionTag.textContent = "Session " + (state.index + 1);
     runSB.textContent = formatNum(sb);
@@ -936,6 +937,16 @@
       tableBody.appendChild(tr0);
       return;
     }
+    // Index every elimination event by who did the eliminating, so each
+    // eliminator's row can also show an "Eliminates <name>" entry.
+    var elimsBy = {};
+    state.players.forEach(function (name, i) {
+      eventsOf(i).forEach(function (e) {
+        if (e.by === null || e.by === undefined || !isFinite(e.by)) return;
+        (elimsBy[e.by] = elimsBy[e.by] || []).push({ name: name, session: e.session, elapsedSec: e.elapsedSec, rebuy: e.rebuy });
+      });
+    });
+
     state.players.forEach(function (name, i) {
       var tr = document.createElement("tr");
       if (isKO(i)) tr.className = "ko";
@@ -952,12 +963,26 @@
 
       var tdEv = document.createElement("td");
       var evs = eventsOf(i);
-      if (evs.length) {
+      var byEvs = elimsBy[i] || [];
+      if (evs.length || byEvs.length) {
         evs.forEach(function (e) {
           var span = document.createElement("span");
           span.className = "ev";
           var byName = e.by !== null && e.by !== undefined ? state.players[e.by] : "?";
-          var parts = "S" + e.session + " • " + fmtElapsed(e.elapsedSec) + " • by " + byName;
+          var parts = "Eliminated by " + byName + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec);
+          span.appendChild(document.createTextNode(parts));
+          if (e.rebuy) {
+            var b = document.createElement("b");
+            b.className = "rebuy";
+            b.textContent = "  +REBUY";
+            span.appendChild(b);
+          }
+          tdEv.appendChild(span);
+        });
+        byEvs.forEach(function (e) {
+          var span = document.createElement("span");
+          span.className = "ev";
+          var parts = "Eliminates " + e.name + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec);
           span.appendChild(document.createTextNode(parts));
           if (e.rebuy) {
             var b = document.createElement("b");
