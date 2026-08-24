@@ -26,6 +26,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 16px;
   }
   .hidden { display: none !important; }
@@ -227,30 +228,6 @@
 
   .controls { display: flex; gap: 12px; flex-wrap: wrap; }
   .controls button { flex: 1 1 40%; min-width: 140px; }
-
-  /* ---- Interlude overlay ---- */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5,12,8,.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-  }
-  .overlay .box { text-align: center; padding: 40px; }
-  .overlay .done {
-    font-size: 15px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-  .overlay .next { font-size: 52px; font-weight: 800; margin: 16px 0; font-variant-numeric: tabular-nums; }
-  .overlay .next .sb { color: #8fd0a8; }
-  .overlay .next .bb { color: var(--accent); }
-  .overlay .next .sep { color: var(--muted); margin: 0 10px; font-weight: 300; }
-  .overlay .count { color: var(--muted); font-size: 16px; }
 
   /* ---- Run two-column + table ---- */
   .run-flex {
@@ -531,18 +508,6 @@
         <tbody id="playerTableBody"></tbody>
       </table>
     </div>
-  </div>
-</div>
-
-<!-- ============ INTERLUDE OVERLAY ============ -->
-<div class="overlay hidden" id="overlay">
-  <div class="box">
-    <div class="done" id="ovDone">Session Complete</div>
-    <div style="color:var(--muted);font-size:14px;letter-spacing:2px;text-transform:uppercase;">Next Session</div>
-    <div class="next">
-      <span class="sb" id="ovSB"></span><span class="sep">/</span><span class="bb" id="ovBB"></span>
-    </div>
-    <div class="count" id="ovCount"></div>
   </div>
 </div>
 
@@ -861,7 +826,6 @@
   var runBB = document.getElementById("runBB");
   var setupView = document.getElementById("setupView");
   var runView = document.getElementById("runView");
-  var overlay = document.getElementById("overlay");
   var tableBody = document.getElementById("playerTableBody");
   var pauseBadge = document.getElementById("pauseBadge");
   var pauseBtn = document.getElementById("pauseBtn");
@@ -897,7 +861,6 @@
     state.running = true;
 
     setupView.classList.add("hidden");
-    overlay.classList.add("hidden");
     runView.classList.remove("hidden");
     window.scrollTo(0, 0);
 
@@ -1066,7 +1029,6 @@
   }
   function openElimModal() {
     if (!state.running) return;
-    if (!overlay.classList.contains("hidden")) return; // interlude in progress
     var active = activeIndices();
     if (active.length < 2) {
       speak("Not enough players to eliminate — at least two must remain.");
@@ -1157,7 +1119,6 @@
   }
 
   function endSession() {
-    state.running = false;
     clearInterval(state.tickId);
     try { window.speechSynthesis.cancel(); } catch (e) {}
     beep([
@@ -1165,33 +1126,8 @@
       { freq: 880, dur: 0.18 },
       { freq: 1175, dur: 0.4 }
     ]);
-
-    var doneTag = document.getElementById("ovDone");
-    var ovSB = document.getElementById("ovSB");
-    var ovBB = document.getElementById("ovBB");
-    var ovCount = document.getElementById("ovCount");
-    var nextIndex = state.index + 1;
-    var nextSB = smallBlindAt(nextIndex);
-
-    doneTag.textContent = "Session " + (state.index + 1) + " Complete";
-    ovSB.textContent = formatNum(nextSB);
-    ovBB.textContent = formatNum(nextSB * 2);
-    overlay.classList.remove("hidden");
-
-    speak("Session complete. Next session, small blind " + nextSB.toLocaleString("en-US") + ", big blind " + (nextSB * 2).toLocaleString("en-US") + ".");
-
-    var countdown = 3;
-    ovCount.textContent = "Starting in " + countdown + "…";
-    var id = setInterval(function () {
-      countdown--;
-      if (countdown <= 0) {
-        clearInterval(id);
-        state.index = nextIndex;
-        startSession(true);
-      } else {
-        ovCount.textContent = "Starting in " + countdown + "…";
-      }
-    }, 1000);
+    state.index++;
+    startSession(true);
   }
 
   // ---------- Chips suggest ----------
@@ -1446,7 +1382,6 @@
     setPauseBtn(false);
     clearInterval(state.tickId);
     try { window.speechSynthesis.cancel(); } catch (e) {}
-    overlay.classList.add("hidden");
     runView.classList.add("hidden");
     setupView.classList.remove("hidden");
     clearActiveSession();
@@ -1674,7 +1609,6 @@
     state.running = true;
 
     setupView.classList.add("hidden");
-    overlay.classList.add("hidden");
     runView.classList.remove("hidden");
     window.scrollTo(0, 0);
 
