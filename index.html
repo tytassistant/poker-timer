@@ -317,6 +317,38 @@
     .run-main, .run-side { flex: 1 1 auto; width: 100%; }
   }
 
+  #runView { position: relative; }
+  .fs-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid #2a4a35;
+    border-radius: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    z-index: 5;
+  }
+  .fs-btn:hover { background: var(--felt); color: var(--text); }
+  .fs-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rotate-hint {
+    display: none;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .3px;
+    margin: -4px 0 14px;
+  }
+  @media (orientation: portrait) {
+    .rotate-hint:not(.hidden) { display: block; }
+  }
+
   /* ---- Elim modal ---- */
   .modal-overlay {
     position: fixed;
@@ -457,6 +489,11 @@
 
 <!-- ============ RUN PAGE ============ -->
 <div class="card hidden" id="runView">
+  <button class="fs-btn" id="fsBtn" type="button" title="Fullscreen landscape" aria-label="Toggle fullscreen landscape">
+    <svg id="fsIconEnter" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4"/></svg>
+    <svg id="fsIconExit" class="hidden" viewBox="0 0 24 24"><path d="M4 9h4V5M4 9l5-5M20 9h-4V5M20 9l-5-5M4 15h4v4M4 15l5 5M20 15h-4v4M20 15l-5 5"/></svg>
+  </button>
+  <div class="rotate-hint hidden" id="rotateHint">↻ Rotate your phone to landscape for a bigger view</div>
   <div class="run-flex">
     <div class="run-main">
       <div class="run-info">
@@ -1428,6 +1465,80 @@
   document.getElementById("elimCancel").addEventListener("click", closeElimModal);
   document.getElementById("elimSave").addEventListener("click", function () { saveElim(false); });
   document.getElementById("elimSaveBuyin").addEventListener("click", function () { saveElim(true); });
+
+  // ---------- Fullscreen / landscape ----------
+  // iOS Safari has no Fullscreen API for regular elements (only <video>), so
+  // there's no JS way to force landscape there — the button is hidden and a
+  // CSS-only rotate hint (@media orientation:portrait) takes over instead.
+  (function () {
+    var fsBtn = document.getElementById("fsBtn");
+    var fsIconEnter = document.getElementById("fsIconEnter");
+    var fsIconExit = document.getElementById("fsIconExit");
+    var rotateHint = document.getElementById("rotateHint");
+    if (!fsBtn) return;
+
+    function fsSupported() {
+      var el = document.documentElement;
+      return !!(el && (el.requestFullscreen || el.webkitRequestFullscreen));
+    }
+    function isFullscreen() {
+      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+    function requestFS() {
+      var el = document.documentElement;
+      if (el.requestFullscreen) return el.requestFullscreen();
+      if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+      return null;
+    }
+    function exitFS() {
+      if (document.exitFullscreen) return document.exitFullscreen();
+      if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+      return null;
+    }
+    function lockLandscape() {
+      try {
+        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+          var p = window.screen.orientation.lock("landscape");
+          if (p && p.catch) p.catch(function () {});
+        }
+      } catch (e) { /* orientation lock unavailable */ }
+    }
+    function unlockOrientation() {
+      try {
+        if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
+      } catch (e) { /* orientation lock unavailable */ }
+    }
+    function updateFsBtn() {
+      var fs = isFullscreen();
+      fsIconEnter.classList.toggle("hidden", fs);
+      fsIconExit.classList.toggle("hidden", !fs);
+      fsBtn.title = fs ? "Exit fullscreen" : "Fullscreen landscape";
+    }
+
+    if (!fsSupported()) {
+      fsBtn.classList.add("hidden");
+      if (rotateHint) rotateHint.classList.remove("hidden");
+      return;
+    }
+
+    fsBtn.addEventListener("click", function () {
+      if (isFullscreen()) {
+        exitFS();
+      } else {
+        var p = requestFS();
+        if (p && p.then) p.then(lockLandscape).catch(function () {});
+        else lockLandscape();
+      }
+    });
+    document.addEventListener("fullscreenchange", function () {
+      updateFsBtn();
+      if (!isFullscreen()) unlockOrientation();
+    });
+    document.addEventListener("webkitfullscreenchange", function () {
+      updateFsBtn();
+      if (!isFullscreen()) unlockOrientation();
+    });
+  })();
 
   // ---------- Persistence ----------
   var SETUP_STORAGE_KEY = "pokerTimerSetupDefaults";
