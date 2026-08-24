@@ -417,7 +417,7 @@
     <label for="sbInput">Small Blind (Big Blind is always 2x)</label>
     <div class="stepper">
       <button type="button" id="sbMinus" title="Decrease">&minus;</button>
-      <input type="number" id="sbInput" value="20" min="1" step="any" aria-label="Small Blind">
+      <input type="number" id="sbInput" value="10" min="1" step="any" aria-label="Small Blind">
       <button type="button" id="sbPlus" title="Increase">+</button>
     </div>
   </div>
@@ -1190,7 +1190,7 @@
     opts.forEach(function (v) {
       var o = document.createElement("option");
       o.value = String(v);
-      o.textContent = v + (v === n ? "  (your players)" : "");
+      o.textContent = String(v);
       if (v === sel) o.selected = true;
       chipsPlayers.appendChild(o);
     });
@@ -1241,8 +1241,8 @@
     renderChipsInputs();
     chipsResult.innerHTML = "";
     chipsWarn.textContent = "";
-    var sbVal = parseInt(sbInput.value, 10);
-    chipsDepth.value = (isFinite(sbVal) && sbVal > 0) ? String(sbVal * 2 * 100) : "1000";
+    var sbVal = state.sessions.length ? state.sessions[0] : parseInt(sbInput.value, 10);
+    chipsDepth.value = (isFinite(sbVal) && sbVal > 0) ? String(sbVal * 2 * 50) : "1000";
     chipsModal.classList.remove("hidden");
   }
   function closeChipsModal() {
