@@ -1120,23 +1120,45 @@
     }
     return counts;
   }
-  // Build a per-player stack of exactly `target` using as FEW chips as
-  // possible, using as many of the large chips as we have of them.
-  // (Our set $1/$2/$5/$10/$20/$50/$100/$500 is a canonical chain where each
-  // value is >= 2x the next-smaller, so filling from largest to smallest is
-  // always optimal and, if a stack is possible at all, this finds one.)
-  function allocate(target, pA) {
-    var used = {};
-    for (var k = 0; k < CHIP_DENS.length; k++) used[CHIP_DENS[k]] = 0;
-    var rem = target;
-    for (var i = CHIP_DENS.length - 1; i >= 0; i--) {
-      var d = CHIP_DENS[i];
-      var take = Math.min(Math.floor(rem / d), pA[d] || 0);
-      used[d] = take;
+  // Greedily fill `rem` value from `denoms` (largest first), consuming from
+  // the shared `avail` pool and adding into `used`. Returns leftover value
+  // that couldn't be covered from this subset of denominations.
+  function allocateBand(rem, denoms, avail, used) {
+    for (var i = denoms.length - 1; i >= 0; i--) {
+      var d = denoms[i];
+      var take = Math.min(Math.floor(rem / d), avail[d] || 0);
+      used[d] += take;
+      avail[d] -= take;
       rem -= take * d;
     }
-    if (rem > 0) return null;   // leftover that the smaller chips can't cover
-    return used;
+    return rem;
+  }
+  // Build a per-player stack worth exactly `target`. Rather than a single
+  // largest-first pass (which tends to hand out mostly big chips and leaves
+  // players without enough small change to post blinds / make min-raises),
+  // this reserves ~60% of the stack's value for denominations at or below
+  // the big blind ("60% low-denomination" rule of thumb) and fills the rest
+  // from bigger chips, before falling back to a plain greedy sweep for any
+  // remainder (e.g. if one band runs out of physical chips).
+  function allocate(target, pA, bb) {
+    var used = {}, avail = {};
+    for (var k = 0; k < CHIP_DENS.length; k++) { used[CHIP_DENS[k]] = 0; avail[CHIP_DENS[k]] = pA[CHIP_DENS[k]] || 0; }
+    var low = CHIP_DENS.filter(function (d) { return d <= bb; });
+    var high = CHIP_DENS.filter(function (d) { return d > bb; });
+    var lowShare = (low.length && high.length) ? Math.round(target * 0.6) : (low.length ? target : 0);
+    var rem = allocateBand(lowShare, low, avail, used);
+    rem = allocateBand(target - lowShare + rem, high, avail, used);
+    rem = allocateBand(rem, low, avail, used);
+    rem = allocateBand(rem, CHIP_DENS, avail, used);
+    if (rem === 0) return used;
+    // Uneven chip availability kept the 60/40 split from landing exactly on
+    // target — fall back to a plain greedy sweep over all available chips
+    // (largest first), which finds a solution whenever one exists at all.
+    var used2 = {}, avail2 = {};
+    for (var m = 0; m < CHIP_DENS.length; m++) { used2[CHIP_DENS[m]] = 0; avail2[CHIP_DENS[m]] = pA[CHIP_DENS[m]] || 0; }
+    var rem2 = allocateBand(target, CHIP_DENS, avail2, used2);
+    if (rem2 > 0) return null;   // leftover that no available chips can cover
+    return used2;
   }
   function suggestion() {
     var sb = parseInt(sbInput.value, 10);
@@ -1148,7 +1170,7 @@
     var avail = readChipsInputs();
     var pA = {};
     for (var i = 0; i < CHIP_DENS.length; i++) pA[CHIP_DENS[i]] = Math.floor(avail[CHIP_DENS[i]] / n);
-    var used = allocate(target, pA);
+    var used = allocate(target, pA, bb);
     if (!used) {
       return { error: "Not enough chips to give every player " + formatNum(target) + ". Add more chips or lower the chips per player amount.", target: target, n: n, partial: true };
     }
