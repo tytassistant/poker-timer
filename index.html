@@ -1340,6 +1340,19 @@
   if (chipsDepth) chipsDepth.addEventListener("change", onChipsSuggest);
 
   // ---------- Controls ----------
+  // Pauses a running (not already-paused) timer, asks for confirmation via
+  // the browser's native confirm dialog, then either runs `action` or -
+  // only if we were the one who paused it - resumes the timer on cancel.
+  function confirmAction(message, action) {
+    if (!state.running) { action(); return; }
+    var wasPaused = state.paused;
+    if (!wasPaused) pauseTimer(false);
+    if (window.confirm(message)) {
+      action();
+    } else if (!wasPaused) {
+      resumeTimer();
+    }
+  }
   function stopToSetup() {
     if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
     state.running = false;
@@ -1352,17 +1365,21 @@
     setupView.classList.remove("hidden");
   }
 
-  document.getElementById("stopBtn").addEventListener("click", stopToSetup);
+  document.getElementById("stopBtn").addEventListener("click", function () {
+    confirmAction("Stop the tournament and return to setup?", stopToSetup);
+  });
   document.getElementById("skipBtn").addEventListener("click", function () {
     if (!state.running) return;
-    if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
-    state.paused = false;
-    state.pausedAtMs = 0;
-    setPauseBtn(false);
-    clearInterval(state.tickId);
-    try { window.speechSynthesis.cancel(); } catch (e) {}
-    state.index++;
-    startSession(true);
+    confirmAction("Skip to the next blind level?", function () {
+      if (elimOpen) { elimOpen = false; elimWasCounting = false; elimModal.classList.add("hidden"); }
+      state.paused = false;
+      state.pausedAtMs = 0;
+      setPauseBtn(false);
+      clearInterval(state.tickId);
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      state.index++;
+      startSession(true);
+    });
   });
   pauseBtn.addEventListener("click", pauseToggle);
   document.getElementById("elimBtn").addEventListener("click", openElimModal);
