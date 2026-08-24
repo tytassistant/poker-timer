@@ -597,6 +597,8 @@
 
   document.getElementById("sbMinus").addEventListener("click", function () { setSB(currentSB() - SB_STEP); });
   document.getElementById("sbPlus").addEventListener("click", function () { setSB(currentSB() + SB_STEP); });
+  durInput.addEventListener("input", function () { saveSetupDefaults(); });
+  buyinInput.addEventListener("input", function () { saveSetupDefaults(); });
 
   document.getElementById("addSessionBtn").addEventListener("click", function () {
     var sb = currentSB();
@@ -605,6 +607,7 @@
     renderList();
     setSB(sb * 2); // next session defaults to double
     updateChipsAvailable();
+    saveSetupDefaults();
   });
 
   document.getElementById("startBtn").addEventListener("click", function () {
@@ -658,6 +661,7 @@
         state.sessions.splice(i, 1);
         renderList();
         updateChipsAvailable();
+        saveSetupDefaults();
       });
       li.appendChild(num); li.appendChild(blinds); li.appendChild(rm);
       listEl.appendChild(li);
@@ -829,6 +833,7 @@
   var chipsResult = document.getElementById("chipsResult");
   var chipsWarn = document.getElementById("chipsWarn");
   var CHIP_DENS = [1, 2, 5, 10, 20, 50, 100, 500];
+  chipsDepth.addEventListener("input", function () { saveSetupDefaults(); });
 
   function fmt(sec) {
     sec = Math.max(0, sec);
@@ -862,6 +867,7 @@
     tick();
     clearInterval(state.tickId);
     state.tickId = setInterval(tick, 250);
+    saveActiveSession();
   }
 
   function formatNum(n) {
@@ -898,6 +904,7 @@
     state.pausedRemainingMs = Math.max(0, state.endAt - Date.now());
     clearInterval(state.tickId);
     setPauseBtn(true);
+    saveActiveSession();
   }
   function resumeTimer() {
     if (!state.paused) return;
@@ -908,6 +915,7 @@
     state.endAt = Date.now() + state.pausedRemainingMs;
     setPauseBtn(false);
     if (state.running) { tick(); clearInterval(state.tickId); state.tickId = setInterval(tick, 250); }
+    saveActiveSession();
   }
   function pauseToggle() {
     if (!state.running) return;
@@ -1072,6 +1080,7 @@
     if (!rebuy) state.active[target] = false;
     renderPlayerTable();
     closeElimModal();
+    saveActiveSession();
   }
 
   function tick() {
@@ -1281,8 +1290,10 @@
       lab.className = "c-val";
       lab.textContent = "$" + d;
       var inp = document.createElement("input");
-      inp.type = "number"; inp.min = "0"; inp.id = "ci-" + d; inp.value = "0";
+      inp.type = "number"; inp.min = "0"; inp.id = "ci-" + d;
+      inp.value = (savedChipCounts && savedChipCounts[d] !== undefined) ? savedChipCounts[d] : "0";
       inp.placeholder = "0";
+      inp.addEventListener("input", function () { saveSetupDefaults(); });
       cell.appendChild(lab);
       cell.appendChild(inp);
       chipsInputBody.appendChild(cell);
@@ -1349,8 +1360,12 @@
     renderChipsInputs();
     chipsResult.innerHTML = "";
     chipsWarn.textContent = "";
-    var sbVal = state.sessions.length ? state.sessions[0] : parseInt(sbInput.value, 10);
-    chipsDepth.value = (isFinite(sbVal) && sbVal > 0) ? String(sbVal * 2 * 50) : "1000";
+    if (savedChipDepth !== null && savedChipDepth !== undefined && savedChipDepth !== "") {
+      chipsDepth.value = savedChipDepth;
+    } else {
+      var sbVal = state.sessions.length ? state.sessions[0] : parseInt(sbInput.value, 10);
+      chipsDepth.value = (isFinite(sbVal) && sbVal > 0) ? String(sbVal * 2 * 50) : "1000";
+    }
     chipsModal.classList.remove("hidden");
   }
   function closeChipsModal() {
@@ -1389,6 +1404,7 @@
     overlay.classList.add("hidden");
     runView.classList.add("hidden");
     setupView.classList.remove("hidden");
+    clearActiveSession();
   }
 
   document.getElementById("stopBtn").addEventListener("click", function () {
@@ -1413,10 +1429,179 @@
   document.getElementById("elimSave").addEventListener("click", function () { saveElim(false); });
   document.getElementById("elimSaveBuyin").addEventListener("click", function () { saveElim(true); });
 
+  // ---------- Persistence ----------
+  var SETUP_STORAGE_KEY = "pokerTimerSetupDefaults";
+  var SESSION_STORAGE_KEY = "pokerTimerActiveSession";
+  var savedChipCounts = null;
+  var savedChipDepth = null;
+
+  function storageGet(key) {
+    try {
+      var raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function storageSet(key, obj) {
+    try { window.localStorage.setItem(key, JSON.stringify(obj)); } catch (e) {}
+  }
+  function storageRemove(key) {
+    try { window.localStorage.removeItem(key); } catch (e) {}
+  }
+
+  function saveSetupDefaults() {
+    var counts = {};
+    var any = false;
+    CHIP_DENS.forEach(function (d) {
+      var el = document.getElementById("ci-" + d);
+      if (el) { counts[d] = el.value; any = true; }
+    });
+    if (any) savedChipCounts = counts;
+    if (chipsDepth.value !== "") savedChipDepth = chipsDepth.value;
+    storageSet(SETUP_STORAGE_KEY, {
+      sessions: state.sessions,
+      durationSec: durInput.value,
+      buyin: buyinInput.value,
+      chipCounts: savedChipCounts,
+      chipDepth: savedChipDepth
+    });
+  }
+
+  function applySetupDefaults() {
+    var data = storageGet(SETUP_STORAGE_KEY);
+    if (!data) return;
+    if (data.sessions && data.sessions.length) {
+      state.sessions = data.sessions.slice();
+    }
+    if (data.durationSec !== undefined && data.durationSec !== null && data.durationSec !== "") {
+      durInput.value = data.durationSec;
+    }
+    if (data.buyin !== undefined && data.buyin !== null && data.buyin !== "") {
+      buyinInput.value = data.buyin;
+    }
+    if (data.chipCounts) savedChipCounts = data.chipCounts;
+    if (data.chipDepth !== undefined && data.chipDepth !== null && data.chipDepth !== "") {
+      savedChipDepth = data.chipDepth;
+    }
+  }
+
+  function snapshotActiveSession() {
+    return {
+      players: state.players,
+      dealer: state.dealer,
+      sessions: state.sessions,
+      durationSec: state.durationSec,
+      buyInBase: state.buyInBase,
+      index: state.index,
+      endAt: state.endAt,
+      warned5: state.warned5,
+      warned1: state.warned1,
+      tournamentStartMs: state.tournamentStartMs,
+      pausedTotalMs: state.pausedTotalMs,
+      paused: state.paused,
+      pausedAtMs: state.pausedAtMs,
+      pausedRemainingMs: state.pausedRemainingMs,
+      active: state.active,
+      eliminated: state.eliminated
+    };
+  }
+  function saveActiveSession() {
+    if (!state.running) return;
+    storageSet(SESSION_STORAGE_KEY, snapshotActiveSession());
+  }
+  function clearActiveSession() {
+    storageRemove(SESSION_STORAGE_KEY);
+  }
+
+  function restoreActiveSession(snap) {
+    state.players = snap.players || [];
+    state.dealer = (snap.dealer === undefined) ? null : snap.dealer;
+    state.sessions = snap.sessions || [];
+    state.durationSec = snap.durationSec || state.durationSec;
+    state.buyInBase = snap.buyInBase || 0;
+    state.tournamentStartMs = snap.tournamentStartMs;
+    state.pausedTotalMs = snap.pausedTotalMs || 0;
+    state.paused = !!snap.paused;
+    state.pausedAtMs = snap.pausedAtMs || 0;
+    state.pausedRemainingMs = snap.pausedRemainingMs || 0;
+    state.active = snap.active || {};
+    state.eliminated = snap.eliminated || {};
+
+    renderList();
+    renderPlayers();
+    updatePlayerActionButtons();
+    updateChipsAvailable();
+    durInput.value = Math.round(state.durationSec / 60);
+    buyinInput.value = state.buyInBase;
+
+    var index = snap.index || 0;
+    var endAt = snap.endAt;
+    var warned5 = !!snap.warned5;
+    var warned1 = !!snap.warned1;
+
+    if (!state.paused) {
+      var now = Date.now();
+      while (now >= endAt) {
+        index++;
+        endAt += state.durationSec * 1000;
+        warned5 = false;
+        warned1 = false;
+      }
+    }
+
+    state.index = index;
+    state.warned5 = warned5;
+    state.warned1 = warned1;
+    state.endAt = endAt;
+    state.running = true;
+
+    setupView.classList.add("hidden");
+    overlay.classList.add("hidden");
+    runView.classList.remove("hidden");
+    window.scrollTo(0, 0);
+
+    var sb = smallBlindAt(state.index);
+    sessionTag.textContent = "Session " + (state.index + 1);
+    runSB.textContent = formatNum(sb);
+    runBB.textContent = formatNum(sb * 2);
+    renderPlayerTable();
+
+    if (state.paused) {
+      var remainMs = state.pausedRemainingMs;
+      var rem = Math.ceil(remainMs / 1000);
+      timerDisplay.textContent = fmt(rem);
+      var pct = Math.max(0, remainMs / (state.durationSec * 1000)) * 100;
+      progressFill.style.width = pct + "%";
+      timerDisplay.classList.toggle("warn", rem <= 600 && rem > 60);
+      timerDisplay.classList.toggle("crit", rem <= 60);
+      setPauseBtn(true);
+      clearInterval(state.tickId);
+      speak("Resuming session " + (state.index + 1) + ", paused. Small blind " + speakNum(sb) + ", big blind " + speakNum(sb * 2) + ".");
+    } else {
+      setPauseBtn(false);
+      var remSec = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      speak("Resuming session " + (state.index + 1) + ". Small blind " + speakNum(sb) + ", big blind " + speakNum(sb * 2) + ". " + fmt(remSec) + " remaining.");
+      tick();
+      clearInterval(state.tickId);
+      state.tickId = setInterval(tick, 250);
+    }
+
+    saveActiveSession();
+  }
+
+  function tryResumeActiveSession() {
+    var snap = storageGet(SESSION_STORAGE_KEY);
+    if (!snap || !snap.players || !snap.players.length) return;
+    var ok = false;
+    try { ok = window.confirm("A poker tournament is still in progress. Resume it?"); } catch (e) { ok = false; }
+    if (ok) restoreActiveSession(snap);
+  }
+
+  applySetupDefaults();
   renderList();
   renderPlayers();
   renderPlayerTable();
   updateChipsAvailable();
+  tryResumeActiveSession();
 })();
 </script>
 </body>
