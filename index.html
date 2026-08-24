@@ -67,6 +67,7 @@
     background: #0f2015;
   }
   .stepper button {
+    flex: none;
     width: 56px;
     font-size: 15px;
     background: var(--felt);
@@ -74,11 +75,13 @@
     border: none;
     cursor: pointer;
     transition: background .15s;
+    white-space: nowrap;
   }
   .stepper button:hover { background: #256441; }
   .stepper button:active { background: var(--accent-dim); }
   .stepper input {
     flex: 1;
+    min-width: 0;
     text-align: center;
     font-size: 15px;
     height: 42px;
@@ -406,7 +409,7 @@
     </div>
   </div>
 
-  <div class="field-row">
+  <div class="field-row" style="margin-bottom:0;">
     <label for="sbInput">Small Blind (Big Blind is always 2x)</label>
     <div class="stepper">
       <button type="button" id="sbMinus" title="Decrease">&minus;</button>
@@ -432,7 +435,7 @@
     </div>
   </div>
 
-  <ul class="session-list" id="playerList"></ul>
+  <ul class="session-list" id="playerList" style="margin-bottom:0;"></ul>
   <p class="hint" style="margin:6px 0 20px;font-style:italic;font-size:12px;"><span style="font-weight:600;">Note:</span> Check one player to set the starting dealer.</p>
 
   <div class="inline-row" style="margin-bottom:20px;">
