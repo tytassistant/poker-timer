@@ -1210,7 +1210,7 @@
     return used;
   }
   function suggestion() {
-    var sb = parseInt(sbInput.value, 10);
+    var sb = state.sessions.length ? state.sessions[0] : parseInt(sbInput.value, 10);
     if (!isFinite(sb) || sb <= 0) return { error: "Set a starting small blind first." };
     var bb = sb * 2;
     var target = parseInt(chipsDepth.value, 10);
