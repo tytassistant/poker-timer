@@ -444,14 +444,14 @@
 
   <div class="inline-row" style="margin-bottom:20px;">
     <div class="field-row">
-      <button class="ghost" id="shuffleBtn" style="width:100%;flex:1;">Randomize Order</button>
+      <button class="primary" id="shuffleBtn" style="width:100%;flex:1;background:#256441;color:var(--text);">Randomize Order</button>
     </div>
     <div class="field-row">
-      <button class="ghost" id="randDealerBtn" style="width:100%;flex:1;">Randomize Dealer</button>
+      <button class="primary" id="randDealerBtn" style="width:100%;flex:1;background:#256441;color:var(--text);">Randomize Dealer</button>
     </div>
   </div>
 
-  <button class="ghost" id="chipsBtn" style="width:100%;margin-bottom:20px;">Suggest Chips</button>
+  <button class="primary" id="chipsBtn" style="width:100%;margin-bottom:20px;background:#256441;color:var(--text);">Suggest Chips</button>
   <button class="primary" id="startBtn">Start Tournament</button>
 </div>
 
@@ -539,6 +539,8 @@
         <input type="number" id="chipsDepth" min="1" step="any">
       </div>
     </div>
+
+    <p class="hint" style="margin:-6px 0 14px;font-style:italic;font-size:12px;"><span style="font-weight:600;">Note:</span> default to 50x big blind</p>
 
     <div class="chips-legend">How many chips do you have of each value?</div>
     <div class="chips-input" id="chipsInputBody"></div>
@@ -691,12 +693,23 @@
   });
 
   document.getElementById("randDealerBtn").addEventListener("click", function () {
-    if (!state.players.length) return;
+    if (state.players.length < 2) return;
     state.dealer = Math.floor(Math.random() * state.players.length);
     renderPlayers();
   });
 
+  function updatePlayerActionButtons() {
+    var ok = state.players.length >= 2;
+    [document.getElementById("shuffleBtn"), document.getElementById("randDealerBtn")].forEach(function (b) {
+      if (!b) return;
+      b.disabled = !ok;
+      b.title = ok ? "" : "Add at least 2 players first";
+      b.style.opacity = ok ? "" : "0.4";
+      b.style.cursor = ok ? "pointer" : "not-allowed";
+    });
+  }
   function renderPlayers() {
+    updatePlayerActionButtons();
     playerListEl.innerHTML = "";
     if (!state.players.length) {
       var li = document.createElement("li");
@@ -1275,19 +1288,18 @@
     }
     var table = document.createElement("table");
     var hr = document.createElement("tr");
-    hr.innerHTML = "<th class=\"l\">Chip</th><th>Per&nbsp;player</th><th>Value</th><th>Use all</th><th>Reserve</th>";
+    hr.innerHTML = "<th class=\"l\">Chip</th><th>Per&nbsp;player</th><th>Value</th><th>Use all</th>";
     table.appendChild(hr);
-    var totVal = 0, totChips = 0, totReserve = 0;
+    var totVal = 0, totChips = 0;
     res.rows.forEach(function (r) {
       var tr = document.createElement("tr");
       tr.innerHTML =
         "<td class=\"l\">$" + r.d + "</td>" +
         "<td>" + r.perPlayer + " × $" + r.d + "</td>" +
         "<td>$" + formatNum(r.value) + "</td>" +
-        "<td>" + r.totalUsed + "</td>" +
-        "<td>" + r.reserve + "</td>";
+        "<td>" + r.totalUsed + "</td>";
       table.appendChild(tr);
-      totVal += r.value; totChips += r.perPlayer; totReserve += r.reserve;
+      totVal += r.value; totChips += r.perPlayer;
     });
     var depthStr = (Math.round(res.depth * 10) / 10) + "bb";
     var trtot = document.createElement("tr");
@@ -1296,8 +1308,7 @@
       "<td class=\"l\">Total stack</td>" +
       "<td>" + totChips + " chips</td>" +
       "<td>$" + formatNum(totVal) + " (" + depthStr + ")</td>" +
-      "<td>" + (totChips * res.n) + "</td>" +
-      "<td>" + totReserve + "</td>";
+      "<td>" + (totChips * res.n) + "</td>";
     table.appendChild(trtot);
     chipsResult.innerHTML = "";
     var head = document.createElement("div");
