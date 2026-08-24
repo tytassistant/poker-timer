@@ -1120,45 +1120,94 @@
     }
     return counts;
   }
-  // Greedily fill `rem` value from `denoms` (largest first), consuming from
-  // the shared `avail` pool and adding into `used`. Returns leftover value
-  // that couldn't be covered from this subset of denominations.
-  function allocateBand(rem, denoms, avail, used) {
-    for (var i = denoms.length - 1; i >= 0; i--) {
-      var d = denoms[i];
-      var take = Math.min(Math.floor(rem / d), avail[d] || 0);
-      used[d] += take;
-      avail[d] -= take;
-      rem -= take * d;
+  // Bounded-knapsack reachability: which sums in [0, cap] can be made using
+  // at most `c` chips of each denomination in `items` (each {d, c})? Runs in
+  // O(cap) per item no matter how large `c` is (a sliding "steps since a
+  // reachable sum was last seen" scan per residue class mod d), instead of
+  // unrolling every individual chip as its own item. Returns one snapshot
+  // per prefix of `items` (steps[0] = using none of them, steps[i] = using
+  // the first i), since reconstruct() needs those snapshots afterwards.
+  function reachableSteps(items, cap) {
+    var dp = new Uint8Array(cap + 1);
+    dp[0] = 1;
+    var steps = [dp];
+    for (var idx = 0; idx < items.length; idx++) {
+      var d = items[idx].d;
+      var c = Math.max(0, Math.min(items[idx].c, Math.floor(cap / d)));
+      var ndp = new Uint8Array(cap + 1);
+      for (var r = 0; r < d; r++) {
+        var sinceTrue = c + 1;
+        for (var i = r; i <= cap; i += d) {
+          sinceTrue = dp[i] ? 0 : sinceTrue + 1;
+          ndp[i] = sinceTrue <= c ? 1 : 0;
+        }
+      }
+      dp = ndp;
+      steps.push(dp);
     }
-    return rem;
+    return steps;
   }
-  // Build a per-player stack worth exactly `target`. Rather than a single
-  // largest-first pass (which tends to hand out mostly big chips and leaves
-  // players without enough small change to post blinds / make min-raises),
-  // this reserves ~60% of the stack's value for denominations at or below
-  // the big blind ("60% low-denomination" rule of thumb) and fills the rest
-  // from bigger chips, before falling back to a plain greedy sweep for any
-  // remainder (e.g. if one band runs out of physical chips).
+  // Recover one concrete chip breakdown that sums to `sum`, using the
+  // reachability snapshots from reachableSteps(). Peels items off in
+  // reverse (last-added first), each time taking the largest count of that
+  // denomination that still leaves the rest reachable — since `items` is
+  // sorted ascending, this resolves the biggest denomination first, so the
+  // breakdown stays as compact as the exact split allows.
+  function reconstruct(items, steps, sum) {
+    var counts = {};
+    var v = sum;
+    for (var idx = items.length - 1; idx >= 0; idx--) {
+      var d = items[idx].d;
+      var maxK = Math.min(items[idx].c, Math.floor(v / d));
+      var prevDp = steps[idx];
+      var chosen = 0;
+      for (var k = maxK; k >= 0; k--) {
+        if (prevDp[v - k * d]) { chosen = k; break; }
+      }
+      counts[d] = chosen;
+      v -= chosen * d;
+    }
+    return counts;
+  }
+  // Build a per-player stack worth exactly `target`. A single largest-first
+  // greedy pass tends to hand out mostly big chips, leaving players without
+  // enough small change to post blinds / make min-raises. Instead, split the
+  // denominations into a low band (<= current big blind) and a high band
+  // (> big blind), work out every exact value each band can make from the
+  // available chips, and pick whichever exact low/high split sums to target
+  // while landing closest to a 60/40 low/high value ratio ("60% low
+  // denomination" rule of thumb) — never falling back to plain greedy, so a
+  // shortage of one band's chips still gets the closest achievable split
+  // rather than reverting to "give out the biggest chips available".
   function allocate(target, pA, bb) {
-    var used = {}, avail = {};
-    for (var k = 0; k < CHIP_DENS.length; k++) { used[CHIP_DENS[k]] = 0; avail[CHIP_DENS[k]] = pA[CHIP_DENS[k]] || 0; }
-    var low = CHIP_DENS.filter(function (d) { return d <= bb; });
-    var high = CHIP_DENS.filter(function (d) { return d > bb; });
-    var lowShare = (low.length && high.length) ? Math.round(target * 0.6) : (low.length ? target : 0);
-    var rem = allocateBand(lowShare, low, avail, used);
-    rem = allocateBand(target - lowShare + rem, high, avail, used);
-    rem = allocateBand(rem, low, avail, used);
-    rem = allocateBand(rem, CHIP_DENS, avail, used);
-    if (rem === 0) return used;
-    // Uneven chip availability kept the 60/40 split from landing exactly on
-    // target — fall back to a plain greedy sweep over all available chips
-    // (largest first), which finds a solution whenever one exists at all.
-    var used2 = {}, avail2 = {};
-    for (var m = 0; m < CHIP_DENS.length; m++) { used2[CHIP_DENS[m]] = 0; avail2[CHIP_DENS[m]] = pA[CHIP_DENS[m]] || 0; }
-    var rem2 = allocateBand(target, CHIP_DENS, avail2, used2);
-    if (rem2 > 0) return null;   // leftover that no available chips can cover
-    return used2;
+    var low = [], high = [];
+    CHIP_DENS.forEach(function (d) {
+      (d <= bb ? low : high).push({ d: d, c: pA[d] || 0 });
+    });
+    low.sort(function (a, b) { return a.d - b.d; });
+    high.sort(function (a, b) { return a.d - b.d; });
+
+    var lowSteps = reachableSteps(low, target);
+    var highSteps = reachableSteps(high, target);
+    var lowReach = lowSteps[lowSteps.length - 1];
+    var highReach = highSteps[highSteps.length - 1];
+
+    var lowShare = target * 0.6;
+    var bestL = -1, bestDist = Infinity;
+    for (var L = 0; L <= target; L++) {
+      if (!lowReach[L] || !highReach[target - L]) continue;
+      var dist = Math.abs(L - lowShare);
+      if (dist < bestDist) { bestDist = dist; bestL = L; }
+    }
+    if (bestL < 0) return null;   // no combination of available chips sums to target
+
+    var lowCounts = reconstruct(low, lowSteps, bestL);
+    var highCounts = reconstruct(high, highSteps, target - bestL);
+    var used = {};
+    for (var i = 0; i < CHIP_DENS.length; i++) used[CHIP_DENS[i]] = 0;
+    low.forEach(function (it) { used[it.d] = lowCounts[it.d]; });
+    high.forEach(function (it) { used[it.d] = highCounts[it.d]; });
+    return used;
   }
   function suggestion() {
     var sb = parseInt(sbInput.value, 10);
