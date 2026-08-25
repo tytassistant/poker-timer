@@ -191,7 +191,7 @@
     font-weight: 800;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
-    margin: 10px 0 4px;
+    margin: 0 0 14px;
   }
   .players-remaining .count { color: #e67e22; }
   .players-remaining .label {
@@ -289,7 +289,7 @@
   table.players td.num-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   table.players td.buyin { color: var(--accent); font-weight: 700; white-space: nowrap; }
   table.players tr.ko td.player-name { text-decoration: line-through; color: var(--muted); }
-  table.players .ev { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; white-space: nowrap; }
+  table.players .ev { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; }
   table.players .ev .rebuy { color: var(--accent); font-weight: 700; }
   table.players .ev + .ev { margin-top: 2px; }
   table.players .ev-edit {
@@ -325,10 +325,10 @@
     .run-main, .run-side { flex: 1 1 auto; width: 100%; }
   }
 
-  #runView { position: relative; max-width: 960px; }
+  #runView { position: relative; max-width: 1100px; }
   @media (min-width: 901px) {
     /* Row layout kicks in above the 900px breakpoint; the timer column is
-       now a share of the 960px run-view cap, not the full viewport, so size
+       now a share of the 1100px run-view cap, not the full viewport, so size
        it off a fixed value instead of vw (which assumes full-width). Capped
        lower than the 130px mobile max to leave room for an hour digit
        (e.g. "1:20:00") on longer sessions. */
@@ -561,9 +561,6 @@
       <div class="blinds-label">Small Blind / Big Blind</div>
       <div class="timer" id="timerDisplay">20:00</div>
       <div class="status-bar"><div class="fill" id="progressFill"></div></div>
-      <div class="players-remaining">
-        <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
-      </div>
       <div class="controls">
         <button class="ghost" id="pauseBtn" style="flex:1;">Pause</button>
         <button class="ghost" id="stopBtn" style="flex:1;">Stop &amp; Setup</button>
@@ -573,6 +570,9 @@
 
     <div class="run-side">
       <h2>Players</h2>
+      <div class="players-remaining">
+        <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
+      </div>
       <button class="ghost" id="elimBtn" style="width:100%;margin-bottom:14px;">Eliminate Player</button>
       <table class="players" id="playerTable">
         <thead>
