@@ -185,9 +185,19 @@
     padding: 5px 16px;
     font-weight: 700;
   }
+  .players-remaining {
+    text-align: center;
+    font-size: min(24vw, 130px);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    margin: 10px 0 4px;
+  }
+  .players-remaining .count { color: #e67e22; }
+  .players-remaining .label { color: var(--text); }
   .blinds-display {
     text-align: center;
-    font-size: 51px;
+    font-size: min(24vw, 130px);
     font-weight: 800;
     margin: 14px 0 4px;
     font-variant-numeric: tabular-nums;
@@ -302,6 +312,7 @@
        lower than the 130px mobile max to leave room for an hour digit
        (e.g. "1:20:00") on longer sessions. */
     .timer { font-size: 108px; }
+    .players-remaining, .blinds-display { font-size: 108px; }
   }
   .fs-btn {
     position: absolute;
@@ -484,6 +495,9 @@
       <div class="run-info">
         <span class="session-tag" id="sessionTag">Session 1</span>
         <span class="pause-badge hidden" id="pauseBadge">PAUSED</span>
+      </div>
+      <div class="players-remaining">
+        <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
       </div>
       <div class="blinds-display">
         <span class="sb" id="runSB">100</span><span class="sep">/</span><span class="bb" id="runBB">200</span>
@@ -822,6 +836,7 @@
   var timerDisplay = document.getElementById("timerDisplay");
   var progressFill = document.getElementById("progressFill");
   var sessionTag = document.getElementById("sessionTag");
+  var playersRemainingCount = document.getElementById("playersRemainingCount");
   var runSB = document.getElementById("runSB");
   var runBB = document.getElementById("runBB");
   var setupView = document.getElementById("setupView");
@@ -940,6 +955,7 @@
   }
 
   function renderPlayerTable() {
+    playersRemainingCount.textContent = String(activeIndices().length);
     tableBody.innerHTML = "";
     if (!state.players.length) {
       var tr0 = document.createElement("tr");
