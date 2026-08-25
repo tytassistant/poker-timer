@@ -408,6 +408,7 @@
     outline: none;
   }
   .modal .field-row input[type="number"] { text-align: center; }
+  #stackSuggestModal .field-row select { text-align: center; }
   .modal .actions3 { display: flex; gap: 10px; margin-top: 6px; }
   .modal .actions3 button { flex: 1; font-size: 15px; padding: 12px 6px; }
   .toggle-row {
@@ -652,8 +653,10 @@
   <div class="modal" style="max-width:400px;">
     <h3>Suggestion</h3>
 
+    <p class="hint" style="margin:-8px 0 14px;font-size:14px;">Select a common multiplier or input manually</p>
+
     <div class="field-row">
-      <label for="stackSuggestPreset">Common multiples</label>
+      <label for="stackSuggestPreset">Common Multipliers</label>
       <select id="stackSuggestPreset"></select>
     </div>
 
@@ -662,9 +665,9 @@
       <input type="number" id="stackSuggestMultiplier" min="1" step="any">
     </div>
 
-    <p class="hint" style="margin:-6px 0 14px;font-size:13px;">
+    <p class="hint" style="margin:-6px 0 14px;font-size:14px;">
       Big blind: <span id="stackSuggestBB">$0</span><br>
-      Suggested stack: <span id="stackSuggestValue">$0</span>
+      Inputted stack value: <span id="stackSuggestValue">$0</span>
     </p>
 
     <div class="actions3">
