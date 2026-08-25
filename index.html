@@ -205,8 +205,10 @@
     text-align: center;
     font-size: min(24vw, 130px);
     font-weight: 800;
+    line-height: 1.1;
     margin: 14px 0 4px;
     font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
   }
   .blinds-display .sb { color: #8fd0a8; }
   .blinds-display .sep { color: var(--muted); margin: 0 8px; font-weight: 300; }
@@ -242,8 +244,8 @@
     transition: width .5s linear;
   }
 
-  .controls { display: flex; gap: 12px; flex-wrap: wrap; }
-  .controls button { flex: 1 1 40%; min-width: 140px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .controls button { flex: 1 1 0; min-width: 80px; padding: 12px 6px; font-size: 14px; }
 
   /* ---- Run two-column + table ---- */
   .run-flex {
@@ -408,6 +410,27 @@
   .modal .field-row input[type="number"] { text-align: center; }
   .modal .actions3 { display: flex; gap: 10px; margin-top: 6px; }
   .modal .actions3 button { flex: 1; font-size: 15px; padding: 12px 6px; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 20px;
+  }
+  .toggle-row > span { font-size: 15px; color: var(--text); }
+  .pill-toggle { position: relative; display: inline-block; width: 48px; height: 26px; cursor: pointer; }
+  .pill-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .pill-toggle .pill-track {
+    position: absolute; inset: 0;
+    background: #0f2015; border: 1px solid #2a4a35; border-radius: 999px;
+    transition: background .15s;
+  }
+  .pill-toggle .pill-thumb {
+    position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--muted);
+    transition: transform .15s, background .15s;
+  }
+  .pill-toggle input:checked + .pill-track { background: var(--accent-dim); }
+  .pill-toggle input:checked + .pill-track .pill-thumb { transform: translateX(22px); background: var(--accent); }
   .modal .warn-line {
     font-size: 14px;
     color: #e67e22;
@@ -533,24 +556,24 @@
         <span class="pause-badge hidden" id="pauseBadge">PAUSED</span>
       </div>
       <div class="blinds-display">
-        <span class="sb" id="runSB">100</span><span class="sep">/</span><span class="bb" id="runBB">200</span>
+        <span class="sb" id="runSB">100</span><span class="sep">/</span><wbr><span class="bb" id="runBB">200</span>
       </div>
       <div class="blinds-label">Small Blind / Big Blind</div>
       <div class="timer" id="timerDisplay">20:00</div>
+      <div class="status-bar"><div class="fill" id="progressFill"></div></div>
       <div class="players-remaining">
         <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
       </div>
-      <div class="status-bar"><div class="fill" id="progressFill"></div></div>
       <div class="controls">
         <button class="ghost" id="pauseBtn" style="flex:1;">Pause</button>
-        <button class="ghost" id="elimBtn" style="flex:1;">Eliminate Player</button>
-        <button class="ghost" id="skipBtn" style="flex:1;">Skip to Next</button>
         <button class="ghost" id="stopBtn" style="flex:1;">Stop &amp; Setup</button>
+        <button class="ghost" id="skipBtn" style="flex:1;">Skip to Next</button>
       </div>
     </div>
 
     <div class="run-side">
-      <h2>Players &amp; Buy-ins</h2>
+      <h2>Players</h2>
+      <button class="ghost" id="elimBtn" style="width:100%;margin-bottom:14px;">Eliminate Player</button>
       <table class="players" id="playerTable">
         <thead>
           <tr><th>Player</th><th style="text-align:right;">Buy-in</th><th>Eliminations</th></tr>
@@ -573,12 +596,16 @@
       <label for="elimBy">Eliminated by</label>
       <select id="elimBy"></select>
     </div>
+    <div class="toggle-row">
+      <span>Re-buy</span>
+      <label class="pill-toggle">
+        <input type="checkbox" id="elimRebuyToggle">
+        <span class="pill-track"><span class="pill-thumb"></span></span>
+      </label>
+    </div>
     <div class="actions3">
       <button class="ghost" id="elimCancel">Cancel</button>
-      <button class="ghost" id="elimSave">Save</button>
-    </div>
-    <div class="actions3" style="margin-top:10px;">
-      <button class="primary" id="elimSaveBuyin" style="width:100%;">Save with Buy-in</button>
+      <button class="primary" id="elimSave">Save</button>
     </div>
     <div class="actions3 hidden" id="elimDeleteRow" style="margin-top:10px;">
       <button class="ghost" id="elimDelete" style="width:100%;color:var(--danger);border-color:var(--danger);">Delete Record</button>
@@ -918,6 +945,7 @@
   var elimTarget = document.getElementById("elimTarget");
   var elimBy = document.getElementById("elimBy");
   var elimWarn = document.getElementById("elimWarn");
+  var elimRebuyToggle = document.getElementById("elimRebuyToggle");
   var elimDeleteRow = document.getElementById("elimDeleteRow");
   var elimOpen = false;
   var elimEditRef = null;
@@ -1168,6 +1196,7 @@
     rebuildBy();
     if (editing) elimBy.value = String(ev.by);
     elimTarget.addEventListener("change", rebuildBy);
+    elimRebuyToggle.checked = editing ? !!ev.rebuy : false;
     elimWarn.textContent = "";
     elimModalTitle.textContent = editing ? "Edit Elimination" : "Record Elimination";
     elimDeleteRow.classList.toggle("hidden", !editing);
@@ -1606,8 +1635,7 @@
   pauseBtn.addEventListener("click", pauseToggle);
   document.getElementById("elimBtn").addEventListener("click", openElimModal);
   document.getElementById("elimCancel").addEventListener("click", closeElimModal);
-  document.getElementById("elimSave").addEventListener("click", function () { saveElim(false); });
-  document.getElementById("elimSaveBuyin").addEventListener("click", function () { saveElim(true); });
+  document.getElementById("elimSave").addEventListener("click", function () { saveElim(elimRebuyToggle.checked); });
   document.getElementById("elimDelete").addEventListener("click", deleteElim);
 
   // ---------- Fullscreen / landscape ----------
