@@ -253,8 +253,8 @@
     gap: 36px;
     align-items: flex-start;
   }
-  .run-main { flex: 1 1 55%; min-width: 0; }
-  .run-side { flex: 1 1 45%; min-width: 0; }
+  .run-main { flex: 1 1 50%; min-width: 0; }
+  .run-side { flex: 1 1 50%; min-width: 0; }
   .run-side h2 {
     font-size: 13px;
     letter-spacing: 1.5px;
@@ -286,7 +286,7 @@
     background: #0b1a10;
   }
   table.players tr:last-child td { border-bottom: none; }
-  table.players td.num-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.players td.num-col { font-variant-numeric: tabular-nums; white-space: nowrap; }
   table.players td.buyin { color: var(--accent); font-weight: 700; white-space: nowrap; }
   table.players tr.ko td.player-name { text-decoration: line-through; color: var(--muted); }
   table.players .ev { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; }
@@ -576,7 +576,7 @@
       <button class="ghost" id="elimBtn" style="width:100%;margin-bottom:14px;">Eliminate Player</button>
       <table class="players" id="playerTable">
         <thead>
-          <tr><th>Player</th><th style="text-align:right;">Buy-in</th><th>Eliminations</th></tr>
+          <tr><th>Player</th><th>Buy-in</th><th>Eliminations</th></tr>
         </thead>
         <tbody id="playerTableBody"></tbody>
       </table>
