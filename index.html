@@ -408,7 +408,18 @@
     outline: none;
   }
   .modal .field-row input[type="number"] { text-align: center; }
-  #stackSuggestModal .field-row select { text-align: center; }
+  .modal .field-row select {
+    text-align: center;
+    text-align-last: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23e8b64c'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
+  }
   .modal .actions3 { display: flex; gap: 10px; margin-top: 6px; }
   .modal .actions3 button { flex: 1; font-size: 15px; padding: 12px 6px; }
   .toggle-row {
