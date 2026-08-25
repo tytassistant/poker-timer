@@ -194,7 +194,13 @@
     margin: 10px 0 4px;
   }
   .players-remaining .count { color: #e67e22; }
-  .players-remaining .label { color: var(--text); }
+  .players-remaining .label {
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
   .blinds-display {
     text-align: center;
     font-size: min(24vw, 130px);
@@ -284,6 +290,19 @@
   table.players .ev { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; white-space: nowrap; }
   table.players .ev .rebuy { color: var(--accent); font-weight: 700; }
   table.players .ev + .ev { margin-top: 2px; }
+  table.players .ev-edit {
+    margin-left: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--muted);
+    opacity: .55;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  table.players .ev-edit:hover { opacity: 1; color: var(--text); }
   .no-players { color: var(--muted); font-style: italic; text-align: center; padding: 14px; }
 
   .pause-badge {
@@ -496,14 +515,14 @@
         <span class="session-tag" id="sessionTag">Session 1</span>
         <span class="pause-badge hidden" id="pauseBadge">PAUSED</span>
       </div>
-      <div class="players-remaining">
-        <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
-      </div>
       <div class="blinds-display">
         <span class="sb" id="runSB">100</span><span class="sep">/</span><span class="bb" id="runBB">200</span>
       </div>
       <div class="blinds-label">Small Blind / Big Blind</div>
       <div class="timer" id="timerDisplay">20:00</div>
+      <div class="players-remaining">
+        <span class="count" id="playersRemainingCount">0</span><span class="label"> players</span>
+      </div>
       <div class="status-bar"><div class="fill" id="progressFill"></div></div>
       <div class="controls">
         <button class="ghost" id="pauseBtn" style="flex:1;">Pause</button>
@@ -528,7 +547,7 @@
 <!-- ============ ELIMINATE MODAL ============ -->
 <div class="modal-overlay hidden" id="elimModal">
   <div class="modal">
-    <h3>Record Elimination</h3>
+    <h3 id="elimModalTitle">Record Elimination</h3>
     <div class="field-row">
       <label for="elimTarget">Player eliminated</label>
       <select id="elimTarget"></select>
@@ -543,6 +562,9 @@
     </div>
     <div class="actions3" style="margin-top:10px;">
       <button class="primary" id="elimSaveBuyin" style="width:100%;">Save with Buy-in</button>
+    </div>
+    <div class="actions3 hidden" id="elimDeleteRow" style="margin-top:10px;">
+      <button class="ghost" id="elimDelete" style="width:100%;color:var(--danger);border-color:var(--danger);">Delete Record</button>
     </div>
     <div class="warn-line" id="elimWarn"></div>
   </div>
@@ -845,10 +867,13 @@
   var pauseBadge = document.getElementById("pauseBadge");
   var pauseBtn = document.getElementById("pauseBtn");
   var elimModal = document.getElementById("elimModal");
+  var elimModalTitle = document.getElementById("elimModalTitle");
   var elimTarget = document.getElementById("elimTarget");
   var elimBy = document.getElementById("elimBy");
   var elimWarn = document.getElementById("elimWarn");
+  var elimDeleteRow = document.getElementById("elimDeleteRow");
   var elimOpen = false;
+  var elimEditRef = null;
 
   var chipsModal = document.getElementById("chipsModal");
   var chipsPlayers = document.getElementById("chipsPlayers");
@@ -971,9 +996,9 @@
     // eliminator's row can also show an "Eliminates <name>" entry.
     var elimsBy = {};
     state.players.forEach(function (name, i) {
-      eventsOf(i).forEach(function (e) {
+      eventsOf(i).forEach(function (e, idx) {
         if (e.by === null || e.by === undefined || !isFinite(e.by)) return;
-        (elimsBy[e.by] = elimsBy[e.by] || []).push({ name: name, session: e.session, elapsedSec: e.elapsedSec, rebuy: e.rebuy });
+        (elimsBy[e.by] = elimsBy[e.by] || []).push({ name: name, session: e.session, elapsedSec: e.elapsedSec, rebuy: e.rebuy, target: i, idx: idx });
       });
     });
 
@@ -995,13 +1020,15 @@
       var evs = eventsOf(i);
       var byEvs = elimsBy[i] || [];
       var rowEvs = [];
-      evs.forEach(function (e) {
+      evs.forEach(function (e, idx) {
         var byName = e.by !== null && e.by !== undefined ? state.players[e.by] : "?";
         rowEvs.push({
           session: e.session,
           elapsedSec: e.elapsedSec,
           rebuy: e.rebuy,
-          text: "Eliminated by " + byName + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec)
+          text: "Eliminated by " + byName + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec),
+          target: i,
+          idx: idx
         });
       });
       byEvs.forEach(function (e) {
@@ -1009,7 +1036,9 @@
           session: e.session,
           elapsedSec: e.elapsedSec,
           rebuy: false,
-          text: "Eliminates " + e.name + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec)
+          text: "Eliminates " + e.name + " • S" + e.session + " • " + fmtElapsed(e.elapsedSec),
+          target: e.target,
+          idx: e.idx
         });
       });
       rowEvs.sort(function (a, b) {
@@ -1026,6 +1055,15 @@
             b.textContent = "  +REBUY";
             span.appendChild(b);
           }
+          var gearBtn = document.createElement("button");
+          gearBtn.type = "button";
+          gearBtn.className = "ev-edit";
+          gearBtn.title = "Edit elimination record";
+          gearBtn.textContent = "⚙";
+          (function (target, idx) {
+            gearBtn.addEventListener("click", function () { openElimModal(target, idx); });
+          })(e.target, e.idx);
+          span.appendChild(gearBtn);
           tdEv.appendChild(span);
         });
       } else {
@@ -1043,25 +1081,35 @@
     state.players.forEach(function (n, i) { if (state.active[i] !== false && !isKO(i)) out.push(i); });
     return out;
   }
-  function openElimModal() {
-    if (!state.running) return;
-    var active = activeIndices();
-    if (active.length < 2) {
-      speak("Not enough players to eliminate — at least two must remain.");
-      return;
+  function openElimModal(editTarget, editIdx) {
+    var editing = editTarget !== undefined && editIdx !== undefined;
+    if (!editing) {
+      if (!state.running) return;
+      var active = activeIndices();
+      if (active.length < 2) {
+        speak("Not enough players to eliminate — at least two must remain.");
+        return;
+      }
     }
+    elimEditRef = editing ? { target: editTarget, idx: editIdx } : null;
+    var ev = editing ? state.eliminated[editTarget][editIdx] : null;
+    // Editing a historical record must allow any player, not just those
+    // still active - the record may predate later eliminations.
+    var pool = editing ? state.players.map(function (n, i) { return i; }) : activeIndices();
+
     elimTarget.innerHTML = "";
-    active.forEach(function (i) {
+    pool.forEach(function (i) {
       var o = document.createElement("option");
       o.value = String(i);
       o.textContent = state.players[i];
       elimTarget.appendChild(o);
     });
+    if (editing) elimTarget.value = String(editTarget);
     function rebuildBy() {
       var target = parseInt(elimTarget.value, 10);
       var prev = elimBy.value ? parseInt(elimBy.value, 10) : null;
       elimBy.innerHTML = "";
-      active.forEach(function (i) {
+      pool.forEach(function (i) {
         if (i === target) return;
         var o = document.createElement("option");
         o.value = String(i);
@@ -1071,13 +1119,17 @@
       if (prev !== null && elimBy.querySelector('option[value="' + prev + '"]')) elimBy.value = String(prev);
     }
     rebuildBy();
+    if (editing) elimBy.value = String(ev.by);
     elimTarget.addEventListener("change", rebuildBy);
     elimWarn.textContent = "";
+    elimModalTitle.textContent = editing ? "Edit Elimination" : "Record Elimination";
+    elimDeleteRow.classList.toggle("hidden", !editing);
     elimOpen = true;
     elimModal.classList.remove("hidden");
   }
   function closeElimModal() {
     elimOpen = false;
+    elimEditRef = null;
     elimModal.classList.add("hidden");
   }
   function saveElim(rebuy) {
@@ -1092,18 +1144,42 @@
       elimWarn.textContent = "Choose who eliminated them.";
       return;
     }
-    var ev = {
-      session: state.index + 1,
-      elapsedSec: Math.round(activeElapsedMs() / 1000),
-      by: by,
-      rebuy: !!rebuy
-    };
-    state.eliminated[target] = state.eliminated[target] || [];
-    state.eliminated[target].push(ev);
-    if (!rebuy) state.active[target] = false;
+    if (elimEditRef) {
+      var oldTarget = elimEditRef.target;
+      var oldIdx = elimEditRef.idx;
+      var oldEv = state.eliminated[oldTarget][oldIdx];
+      var updated = { session: oldEv.session, elapsedSec: oldEv.elapsedSec, by: by, rebuy: !!rebuy };
+      state.eliminated[oldTarget].splice(oldIdx, 1);
+      state.eliminated[target] = state.eliminated[target] || [];
+      state.eliminated[target].push(updated);
+      state.active[oldTarget] = !isKO(oldTarget);
+      state.active[target] = !isKO(target);
+    } else {
+      var ev = {
+        session: state.index + 1,
+        elapsedSec: Math.round(activeElapsedMs() / 1000),
+        by: by,
+        rebuy: !!rebuy
+      };
+      state.eliminated[target] = state.eliminated[target] || [];
+      state.eliminated[target].push(ev);
+      if (!rebuy) state.active[target] = false;
+    }
     renderPlayerTable();
     closeElimModal();
     saveActiveSession();
+  }
+  function deleteElim() {
+    if (!elimOpen || !elimEditRef) return;
+    var target = elimEditRef.target;
+    var idx = elimEditRef.idx;
+    confirmAction("Delete this elimination record?", function () {
+      state.eliminated[target].splice(idx, 1);
+      state.active[target] = !isKO(target);
+      renderPlayerTable();
+      closeElimModal();
+      saveActiveSession();
+    });
   }
 
   function tick() {
@@ -1424,6 +1500,7 @@
   document.getElementById("elimCancel").addEventListener("click", closeElimModal);
   document.getElementById("elimSave").addEventListener("click", function () { saveElim(false); });
   document.getElementById("elimSaveBuyin").addEventListener("click", function () { saveElim(true); });
+  document.getElementById("elimDelete").addEventListener("click", deleteElim);
 
   // ---------- Fullscreen / landscape ----------
   // iOS Safari has no Fullscreen API for regular elements (only <video>), so
