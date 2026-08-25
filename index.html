@@ -414,6 +414,23 @@
     text-align: center;
     margin-top: 14px;
   }
+  .field-icon-row { display: flex; gap: 8px; align-items: stretch; }
+  .field-icon-row input { flex: 1; }
+  .icon-btn-info {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #256441;
+    border: 1px solid #2a4a35;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 18px;
+    font-style: italic;
+    cursor: pointer;
+    padding: 0;
+  }
+  .icon-btn-info:hover { background: #2f7d52; }
   .chips-legend {
     font-size:14px; color:var(--muted); margin-bottom:8px;
   }
@@ -582,7 +599,10 @@
       </div>
       <div class="field-row">
         <label for="chipsDepth">Chips per player ($)</label>
-        <input type="number" id="chipsDepth" min="1" step="any">
+        <div class="field-icon-row">
+          <input type="number" id="chipsDepth" min="1" step="any">
+          <button type="button" id="stackSuggestBtn" class="icon-btn-info" title="Suggest stack size">i</button>
+        </div>
       </div>
     </div>
 
@@ -598,6 +618,33 @@
       <button class="primary" id="chipsSuggest" style="background:#256441;color:var(--text);">Suggest</button>
     </div>
     <div class="warn-line" id="chipsWarn"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="stackSuggestModal">
+  <div class="modal" style="max-width:400px;">
+    <h3>Suggestion</h3>
+
+    <div class="field-row">
+      <label for="stackSuggestPreset">Common multiples</label>
+      <select id="stackSuggestPreset"></select>
+    </div>
+
+    <div class="field-row">
+      <label for="stackSuggestMultiplier">Multiplier (x big blind)</label>
+      <input type="number" id="stackSuggestMultiplier" min="1" step="any">
+    </div>
+
+    <p class="hint" style="margin:-6px 0 14px;font-size:13px;">
+      Big blind: <span id="stackSuggestBB">$0</span><br>
+      Suggested stack: <span id="stackSuggestValue">$0</span>
+    </p>
+
+    <div class="actions3">
+      <button class="ghost" id="stackSuggestCancel">Cancel</button>
+      <button class="primary" id="stackSuggestApply" style="background:#256441;color:var(--text);">Apply</button>
+    </div>
+    <div class="warn-line" id="stackSuggestWarn"></div>
   </div>
 </div>
 
@@ -1452,6 +1499,67 @@
   if (document.getElementById("chipsSuggest")) document.getElementById("chipsSuggest").addEventListener("click", onChipsSuggest);
   if (chipsPlayers) chipsPlayers.addEventListener("change", onChipsSuggest);
   if (chipsDepth) chipsDepth.addEventListener("change", onChipsSuggest);
+
+  // ---------- Stack suggestion modal ----------
+  var stackSuggestModal = document.getElementById("stackSuggestModal");
+  var stackSuggestPreset = document.getElementById("stackSuggestPreset");
+  var stackSuggestMultiplier = document.getElementById("stackSuggestMultiplier");
+  var stackSuggestBB = document.getElementById("stackSuggestBB");
+  var stackSuggestValue = document.getElementById("stackSuggestValue");
+  var stackSuggestWarn = document.getElementById("stackSuggestWarn");
+  var stackSuggestApply = document.getElementById("stackSuggestApply");
+  var STACK_MULTIPLIERS = [30, 40, 50, 75, 100];
+  var DEFAULT_STACK_MULTIPLIER = 50;
+
+  function currentBBForStack() {
+    var sb = state.sessions.length ? state.sessions[0] : parseInt(sbInput.value, 10);
+    return (isFinite(sb) && sb > 0) ? sb * 2 : 0;
+  }
+  function renderStackSuggestPresets(bb) {
+    stackSuggestPreset.innerHTML = "";
+    STACK_MULTIPLIERS.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = String(m);
+      o.textContent = m + "x big blind ($" + formatNum(m * bb) + ")";
+      stackSuggestPreset.appendChild(o);
+    });
+  }
+  function updateStackSuggestDisplay(bb) {
+    var m = parseFloat(stackSuggestMultiplier.value);
+    if (!isFinite(m) || m < 0) m = 0;
+    stackSuggestBB.textContent = "$" + formatNum(bb);
+    stackSuggestValue.textContent = "$" + formatNum(Math.round(m * bb));
+  }
+  function openStackSuggestModal() {
+    var bb = currentBBForStack();
+    stackSuggestWarn.textContent = bb ? "" : "Set a starting small blind first.";
+    stackSuggestApply.disabled = !bb;
+    renderStackSuggestPresets(bb);
+    stackSuggestPreset.value = String(DEFAULT_STACK_MULTIPLIER);
+    stackSuggestMultiplier.value = String(DEFAULT_STACK_MULTIPLIER);
+    updateStackSuggestDisplay(bb);
+    stackSuggestModal.classList.remove("hidden");
+  }
+  function closeStackSuggestModal() {
+    stackSuggestModal.classList.add("hidden");
+  }
+  if (document.getElementById("stackSuggestBtn")) document.getElementById("stackSuggestBtn").addEventListener("click", openStackSuggestModal);
+  stackSuggestPreset.addEventListener("change", function () {
+    stackSuggestMultiplier.value = stackSuggestPreset.value;
+    updateStackSuggestDisplay(currentBBForStack());
+  });
+  stackSuggestMultiplier.addEventListener("input", function () {
+    updateStackSuggestDisplay(currentBBForStack());
+  });
+  if (document.getElementById("stackSuggestCancel")) document.getElementById("stackSuggestCancel").addEventListener("click", closeStackSuggestModal);
+  stackSuggestApply.addEventListener("click", function () {
+    var bb = currentBBForStack();
+    var m = parseFloat(stackSuggestMultiplier.value);
+    if (!bb || !isFinite(m) || m <= 0) return;
+    chipsDepth.value = String(Math.round(m * bb));
+    closeStackSuggestModal();
+    onChipsSuggest();
+  });
 
   // ---------- Controls ----------
   // Pauses a running (not already-paused) timer, asks for confirmation via
